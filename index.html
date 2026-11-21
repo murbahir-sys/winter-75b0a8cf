@@ -8,8 +8,8 @@
 <meta name="referrer" content="no-referrer">
 <title>Для тебя</title>
 <link rel="preload" href="fonts/c865567969.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/fonts.css?v=3">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/fonts.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=4">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 28S3 20 3 11a6.5 6.5 0 0 1 13-2 6.5 6.5 0 0 1 13 2c0 9-13 17-13 17z' fill='%23e8274b'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -36,13 +36,26 @@
   <section class="screen s-intro is-active" data-screen="intro" aria-label="Начало">
     <h1 class="wide" data-t="introTitle" data-split></h1>
     <p class="serif-line" data-t="introLine"></p>
-    <button class="hold" id="hold" aria-label="Коснись сердца и подержи"></button>
+    <button class="hold" id="hold" aria-label="Подержи сердце"></button>
     <p class="hint" data-t="introHint"></p>
     <div class="hold-bar" aria-hidden="true"><i id="holdBar"></i></div>
   </section>
 
   <section class="screen s-ask" data-screen="ask" aria-label="Вопрос">
     <div class="ask-text">
+      <svg class="emblem" viewBox="0 0 320 150" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="beamG" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#ffd7a6" stop-opacity=".55"/><stop offset=".55" stop-color="#ffb48f" stop-opacity=".14"/><stop offset="1" stop-color="#ffb48f" stop-opacity="0"/></linearGradient>
+          <radialGradient id="lampG"><stop offset="0" stop-color="#fff3e2"/><stop offset=".35" stop-color="#ffd7a6" stop-opacity=".8"/><stop offset="1" stop-color="#ffb48f" stop-opacity="0"/></radialGradient>
+        </defs>
+        <g class="beam"><polygon points="214,47 66,26 66,70 214,49" fill="url(#beamG)"/></g>
+        <circle class="lamp" cx="214" cy="48" r="11" fill="url(#lampG)"/>
+        <path class="ln" pathLength="1" d="M0 118H38C58 117 70 112 88 110C104 108 112 100 128 99L150 98C160 97 168 92 178 90L198 86H232C240 86 246 92 252 100C258 108 266 116 286 118H320"/>
+        <path class="ln thin" pathLength="1" d="M124 99V88M121.5 88H126.5M130 98.5V86M127.5 86H132.5M136 98.3V89M133.5 89H138.5"/>
+        <path class="ln" pathLength="1" d="M208 86L211 52H217L220 86M206 52H222M209 52V44H219V52M207 44L214 37.5L221 44"/>
+        <g class="sea"><path d="M60 127H96M150 127H196M232 127H262"/><path d="M96 134H128M176 134H204M248 134H286"/><path d="M128 141H150M196 141H224"/></g>
+        <path class="refl" d="M214 122V126M214 130V133M214 137V139M214 143V144"/>
+      </svg>
       <h2 class="display" data-t="question" data-split></h2>
       <p class="sub" data-t="questionSub"></p>
       <div class="ask-btns">
@@ -55,6 +68,19 @@
   </section>
 
   <section class="screen s-later" data-screen="later" aria-label="Ответ">
+    <svg class="emblem" viewBox="0 0 320 150" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="beamG2" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#ffd7a6" stop-opacity=".55"/><stop offset=".55" stop-color="#ffb48f" stop-opacity=".14"/><stop offset="1" stop-color="#ffb48f" stop-opacity="0"/></linearGradient>
+          <radialGradient id="lampG2"><stop offset="0" stop-color="#fff3e2"/><stop offset=".35" stop-color="#ffd7a6" stop-opacity=".8"/><stop offset="1" stop-color="#ffb48f" stop-opacity="0"/></radialGradient>
+        </defs>
+        <g class="beam"><polygon points="214,47 66,26 66,70 214,49" fill="url(#beamG2)"/></g>
+        <circle class="lamp" cx="214" cy="48" r="11" fill="url(#lampG2)"/>
+        <path class="ln" pathLength="1" d="M0 118H38C58 117 70 112 88 110C104 108 112 100 128 99L150 98C160 97 168 92 178 90L198 86H232C240 86 246 92 252 100C258 108 266 116 286 118H320"/>
+        <path class="ln thin" pathLength="1" d="M124 99V88M121.5 88H126.5M130 98.5V86M127.5 86H132.5M136 98.3V89M133.5 89H138.5"/>
+        <path class="ln" pathLength="1" d="M208 86L211 52H217L220 86M206 52H222M209 52V44H219V52M207 44L214 37.5L221 44"/>
+        <g class="sea"><path d="M60 127H96M150 127H196M232 127H262"/><path d="M96 134H128M176 134H204M248 134H286"/><path d="M128 141H150M196 141H224"/></g>
+        <path class="refl" d="M214 122V126M214 130V133M214 137V139M214 143V144"/>
+      </svg>
     <h2 class="display" data-t="laterTitle" data-split></h2>
     <p class="lead" data-t="laterLine"></p>
     <div class="stack">
@@ -117,9 +143,9 @@
   </section>
 </main>
 
-<script src="config.js?v=3"></script>
-<script src="js/gsap.min.js?v=3"></script>
-<script src="js/gl.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="js/gsap.min.js?v=4"></script>
+<script src="js/gl.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

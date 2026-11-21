@@ -1,9 +1,8 @@
-/* Мир сайта: зимний Крым ночью (горы в тумане, море, луна, огни, снег)
-   и тонкий светящийся контур сердца, который «зажигают» удержанием.
-   Один шейдер, без библиотек. */
+/* Мир сайта: зимний Крым ночью (горы в тумане, море, огни, снег),
+   стеклянное переливающееся сердце. Один шейдер, без библиотек. */
 (function () {
   const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, glow: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hx: 0, hy: 0, hs: 0.2 };
+  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1 };
   const T = Object.assign({}, S);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
@@ -15,7 +14,7 @@
   const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   const fs = `
 precision highp float;
-uniform vec2 R; uniform float t,q,heart,fill,burst,glow,cam,par,tint,streak,beat,hx,hy,hs;
+uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
@@ -26,7 +25,7 @@ mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
 
 // ---------- мир ----------
-float HZ=-0.20;
+const float HZ=-0.20;
 float lightsRow(float x){ // огни набережной
   float c=floor(x*90.); float f=fract(x*90.)-.5;
   return step(.45,h11(c*3.1))*smoothstep(.22,0.,abs(f));
@@ -35,14 +34,13 @@ vec3 world(vec2 uv,float asp){
   float w=uv.x+cam*0.25;
   // небо
   vec3 col=mix(vec3(.10,.035,.045),vec3(.012,.012,.03),smoothstep(HZ,.75,uv.y));
-  col+=vec3(.55,.18,.10)*exp(-max(uv.y-HZ,0.)*7.)*(.28+.22*tint+.3*glow);
+  col+=vec3(.55,.18,.10)*exp(-max(uv.y-HZ,0.)*7.)*(.35+.25*tint);
   col+=vec3(.25,.06,.12)*exp(-length(uv-vec2(.6*asp,.55))*2.5)*.25;
   // звёзды
-  vec2 sgp=(uv+vec2(cam*.05,0.))*110.; vec2 sg=floor(sgp); float sh=h21(sg);
-  float sd=length(fract(sgp)-.5-(vec2(h21(sg+1.),h21(sg+2.))-.5)*.5);
-  col+=vec3(1.,.9,.85)*step(.993,sh)*smoothstep(.16,.02,sd)*smoothstep(HZ+.15,.5,uv.y)*(.45+.4*sin(t*1.6+sh*40.));
+  vec2 sg=floor((uv+vec2(cam*.05,0.))*140.); float sh=h21(sg);
+  col+=vec3(1.,.9,.85)*step(.9965,sh)*smoothstep(HZ+.15,.5,uv.y)*(.5+.5*sin(t*2.+sh*40.));
   // луна в дымке
-  vec2 mp=vec2((asp<1.?-.27:-.3*asp)+cam*.02,(asp<1.?.48+(1.-asp)*.14:.3));
+  vec2 mp=vec2(-.42*asp+cam*.02,.48);
   float md=length(uv-mp);
   col+=vec3(1.,.86,.72)*(smoothstep(.042,.038,md)*.8+exp(-md*9.)*.18);
   // горы: 3 слоя, туман между ними
@@ -62,7 +60,7 @@ vec3 world(vec2 uv,float asp){
         vec2 g=vec2(x*60.,uv.y*60.); vec2 c=floor(g); vec2 f=fract(g)-.5;
         float on=step(.86,h21(c))*step(uv.y,hgt-.012)*smoothstep(HZ+.10,HZ,uv.y);
         float tw=.6+.4*sin(t*1.5+h21(c+3.)*30.);
-        mc+=vec3(1.,.62,.3)*on*smoothstep(.18,0.,length(f))*(1.+.9*glow)*tw;
+        mc+=vec3(1.,.62,.3)*on*smoothstep(.18,0.,length(f))*1.6*tw;
         mc+=vec3(1.,.55,.3)*on*exp(-length(f)*4.)*.08;
       }
       col=mc;
@@ -73,14 +71,14 @@ vec3 world(vec2 uv,float asp){
     col+=vec3(.42,.22,.22)*fog*(.16-fi*.03);
   }
   // огни набережной
-  if(abs(uv.y-HZ-.006)<.02){ col+=vec3(1.,.7,.4)*lightsRow(w)*smoothstep(.006,0.,abs(uv.y-HZ-.006))*(.8+.8*glow); }
+  if(abs(uv.y-HZ-.006)<.02){ col+=vec3(1.,.7,.4)*lightsRow(w)*smoothstep(.006,0.,abs(uv.y-HZ-.006))*1.2; }
   // море
   if(uv.y<HZ){
     float dy=HZ-uv.y;
     vec3 sea=mix(vec3(.05,.025,.04),vec3(.01,.008,.016),smoothstep(0.,.5,dy));
     float rip=n1(uv.y*160./(dy+.05)*.05+t*.8)*n1(w*30.+uv.y*90.);
     float refl=lightsRow(w+ (rip-.5)*.05)*exp(-dy*9.)*(.3+1.*rip*rip);
-    sea+=vec3(1.,.6,.35)*refl*(.22+.25*glow);
+    sea+=vec3(1.,.6,.35)*refl*.32;
     sea+=vec3(.6,.25,.15)*exp(-dy*12.)*.25;
     // лунная дорожка
     sea+=vec3(1.,.85,.7)*exp(-abs(uv.x-mp.x)*18.)*exp(-dy*3.)*rip*.35;
@@ -101,111 +99,94 @@ vec3 snowFx(vec2 uv){
   return c;
 }
 
-// ---------- сердце (тонкий контур) ----------
+// ---------- сердце ----------
 float sdHeart(vec2 p){
   p.x=abs(p.x);
   if(p.y+p.x>1.0) return sqrt(dot2(p-vec2(0.25,0.75)))-0.35355;
   return sqrt(min(dot2(p-vec2(0.0,1.0)),dot2(p-0.5*max(p.x+p.y,0.0))))*sign(p.x-p.y);
 }
-float pulse(){float b=fract(t*(.75+fill*.5));return (exp(-b*9.)*.6+exp(-max(b-.18,0.)*9.)*.4*step(.18,b));}
-// точка на контуре сердца: u∈[0,1] — от нижнего кончика до ямки сверху, sd — сторона (±1)
-const float HL=1.8178; // длина половины контура: отрезок .7071 + дуга .3536*PI
-vec2 hpt(float u,float sd){
-  float s=u*HL; vec2 p;
-  if(s<.7071) p=vec2(.5,.5)*(s/.7071);
-  else { float a=-PI*.25+(s-.7071)/.35355; p=vec2(.25,.75)+.35355*vec2(cos(a),sin(a)); }
-  return vec2(p.x*sd,p.y-.52);
+float pulse(){float b=fract(t*(.85+fill*.6));return (exp(-b*9.)*.6+exp(-max(b-.18,0.)*9.)*.4*step(.18,b))*(.3+fill*.7);}
+vec3 hp(vec3 p){p.xz*=rot(sin(t*.45)*.55+burst*2.);p.yz*=rot(.12*sin(t*.33));return p;}
+float mapH(vec3 p){
+  float sc=hs*(1.+.035*pulse()+.05*beat+burst*.25);
+  p/=sc; p=hp(p);
+  vec2 qv=p.xy*1.25+vec2(0.,.62);
+  float d2=sdHeart(qv)/1.25;
+  float th=.30*sqrt(clamp(-d2*3.2,0.,1.))+.035;
+  float dz=abs(p.z)-th;
+  return (length(max(vec2(d2,dz),0.))+min(max(d2,dz),0.)-.03)*.7*sc;
 }
-float hparam(vec2 k){ // обратное: параметр ближайшей точки контура
-  vec2 p=vec2(abs(k.x),k.y+.52);
-  if(p.x+p.y>1.) return (.7071+(atan(p.y-.75,p.x-.25)+PI*.25)*.35355)/HL;
-  return clamp((p.x+p.y)*.7071,0.,.7071)/HL;
-}
-vec2 hcurve(float a){return hpt(fract(a*2.),a<.5?1.:-1.);}
-// сердце в экранных координатах: d — расстояние до контура (в долях экрана), k — локальные коорд.
-float heartD(vec2 uv,out vec2 k){
-  float sc=hs*(1.+.025*pulse()*fill+.03*beat);
-  k=(uv-vec2(hx,hy))/sc;
-  return sdHeart(k*1.0+vec2(0.,.52))*sc;
-}
-vec3 heartCol(vec2 uv){
-  vec3 c=vec3(0.);
-  vec2 k; float d=heartD(uv,k);
-  float px=1.5/min(R.x,R.y);
-  // уровень «зажжённости»: снизу вверх
-  float u=hparam(k);
-  float lit=fill>.995?1.:smoothstep(fill+.005,fill-.05,u)*step(.001,fill);
-  // растворение в пыль: мягкий шум вдоль контура
-  float ua=hparam(k)*(k.x<0.?-1.:1.);
-  float dn=n1(ua*9.+3.)*.6+n1(ua*31.)*.4;
-  float keep=1.-smoothstep(dn-.15,dn+.05,burst*1.25);
-  float w=.0016+.0012*lit;
-  float line=smoothstep(w+px,w,abs(d));
-  vec3 warm=mix(vec3(1.,.42,.38),vec3(1.,.78,.58),lit*.7+.15*pulse()*lit);
-  vec3 cold=vec3(.85,.78,.82);
-  vec3 lc=mix(cold*.45,warm*1.6,lit);
-  c+=lc*line*keep;
-  // мягкое свечение вокруг линии
-  float gl1=exp(-abs(d)*(260.-120.*lit))*(.05+.35*lit)*(1.+.6*pulse()*lit+.5*beat);
-  c+=warm*gl1*keep;
-  // тёплая дымка внутри, когда загорелось
-  float inside=smoothstep(.0,-.05,d);
-  c+=vec3(1.,.4,.35)*inside*.07*fill*fill*(1.-burst);
-  // искра — бегущая точка, «зажигающая» контур
-  if(fill>.01&&fill<.995){
-    for(int s=0;s<2;s++){
-      vec2 sp=hpt(fill,s==0?1.:-1.)*hs+vec2(hx,hy);
-      float dd=length(uv-sp);
-      c+=vec3(1.,.85,.7)*(.00012/(dd*dd+.00006))*(.6+.4*sin(t*30.+float(s)));
-    }
-  }
-  return c;
-}
-vec3 dust(vec2 uv){
-  vec3 c=vec3(0.);
-  if(burst<.001) return c;
-  float np=70.*q;
-  for(int i=0;i<70;i++){
-    float fi=float(i); if(fi>np) break;
-    float a=h11(fi*1.7);
-    vec2 o=hcurve(a)*hs+vec2(hx,hy);
-    vec2 dir=normalize(hcurve(a)+vec2(0.,.05)+(vec2(h11(fi*3.1),h11(fi*5.3))-.5)*.8);
-    float sp=(.08+.35*h11(fi*7.7))*hs*5.;
-    float b=burst;
-    vec2 pos=o+dir*sp*(1.-pow(1.-b,2.2))+vec2(sin(t*.8+fi)*.01,b*b*.06);
-    float dd=length(uv-pos);
-    float sz=.0025+.004*h11(fi*9.1);
-    float life=smoothstep(0.,.08,b)*(1.-smoothstep(.45+.4*h11(fi*2.2),1.,b));
-    c+=mix(vec3(1.,.55,.42),vec3(1.,.9,.8),h11(fi*4.4))*exp(-dd*dd/(sz*sz))*life*.9;
-  }
-  return c;
-}
+vec3 nH(vec3 p){vec2 e=vec2(.0015,-.0015);return normalize(e.xyy*mapH(p+e.xyy)+e.yyx*mapH(p+e.yyx)+e.yxy*mapH(p+e.yxy)+e.xxx*mapH(p+e.xxx));}
 
 void main(){
   vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);
   float asp=R.x/R.y;
-  HZ=-.2-max(1.-asp,0.)*.3; // на вытянутом экране горизонт ниже — больше неба
   vec3 col=world(uv,asp);
+  vec3 ro=vec3(0.,0.,3.2);
+  // ---------- сердце ----------
   if(heart>.01){
-    vec3 hcol=heartCol(uv);
-    // отражение на воде — мягкая дрожащая дорожка света под сердцем
-    if(uv.y<HZ){
-      float dy=HZ-uv.y;
-      float rip=n1(uv.y*260./(dy+.08)*.04+t*1.3)*n1(uv.x*40.+uv.y*120.);
-      float colw=exp(-pow((uv.x-hx+(rip-.5)*.02)/(hs*(.35+dy*1.2)),2.));
-      float lit=fill*(1.-burst*.7);
-      hcol+=vec3(1.,.55,.42)*colw*exp(-dy*4.)*(.03+.2*lit)*(.4+1.2*rip);
+    vec2 hu=uv-vec2(0.,hy);
+    vec3 rd=normalize(vec3(hu,-2.1));
+    float d2s=sdHeart((hu/hs)*1.52*1.25+vec2(0.,.62))/1.25;
+    float halo=exp(-max(d2s,0.)*(6.-3.*fill))*(.10+.5*fill+.25*beat)*(1.-burst);
+    col+=vec3(1.,.30,.28)*halo*heart*.5;
+    float tt=0.,hit=0.; vec3 p;
+    float b=dot(ro,rd),c=dot(ro,ro)-1.5*hs*hs,h=b*b-c;
+    if(h>0.){
+      tt=max(-b-sqrt(h),0.);
+      for(int i=0;i<64;i++){
+        if(float(i)>64.*q) break;
+        p=ro+rd*tt; float d=mapH(p);
+        if(d<.0015){hit=1.;break;}
+        tt+=d; if(tt>6.) break;
+      }
     }
-    // волна света, расходящаяся от сердца
-    float r=length((uv-vec2(hx,hy))*vec2(1.,1.25));
-    float wave=exp(-pow((r-burst*1.6)*7.,2.))*smoothstep(1.,.4,burst)*smoothstep(0.,.05,burst);
-    hcol+=vec3(1.,.6,.45)*wave*.12;
-    hcol+=vec3(1.,.45,.38)*exp(-r/hs*2.2)*fill*.12*(1.-burst*.8);
-    col+=(hcol+dust(uv))*heart;
+    if(hit>.5){
+      vec3 n=nH(p), v=-rd;
+      vec3 lp=hp(p/(hs*(1.+burst*.25)));
+      // растворение на частицы
+      float hn=mix(h21(floor(lp.xy*46.)+floor(lp.z*46.)*7.),1.-(lp.y*.5+.5),.45);
+      float keep=step(burst*1.05,hn);
+      float edge=smoothstep(.08,0.,hn-burst*1.05)*step(.001,burst);
+      float fr=pow(1.-max(dot(n,v),0.),2.2);
+      vec3 refr=world(uv+n.xy*.16*(1.-fr),asp)*vec3(1.,.9,.95)*1.15;
+      vec3 r=reflect(rd,n);
+      vec3 env=world(vec2(r.x*.7,r.y*.5-.05),asp)*1.4;
+      env+=vec3(1.,.95,.9)*smoothstep(.55,.9,r.y)*smoothstep(.6,.1,abs(r.x))*1.3;
+      env+=vec3(1.,.55,.4)*smoothstep(.6,.95,r.x)*.6;
+      vec3 irid=.5+.5*cos(2.*PI*(vec3(0.,.33,.67)+fr*1.3+dot(n,vec3(.3,.6,.2))*.7+t*.04));
+      float py=p.y/hs, lvl=mix(-1.05,.95,fill);
+      float lit=smoothstep(lvl+.07,lvl-.07,py);
+      vec3 glow=mix(vec3(1.,.18,.25),vec3(1.,.6,.42),clamp(-py*.6+.5,0.,1.));
+      vec3 l=normalize(vec3(.5,.8,.6));
+      float sp=pow(max(dot(reflect(-l,n),v),0.),90.);
+      vec3 hc=refr*(1.-lit*.75)*(1.-fr*.5);
+      hc+=glow*lit*(.55+.6*(1.-fr))*(1.+.4*pulse());
+      hc+=env*fr*mix(vec3(1.),irid,.8)*.9;
+      hc+=irid*fr*.18;
+      hc+=vec3(1.)*sp*1.6;
+      hc+=vec3(1.,.8,.6)*smoothstep(.03,0.,abs(py-lvl))*step(.01,fill)*step(fill,.99)*.7;
+      hc+=vec3(1.,.7,.5)*edge*2.;
+      col=mix(col,hc,heart*keep);
+    }
+    // частицы: пыль вокруг и взрыв
+    float np=24.+40.*burst;
+    for(int i=0;i<64;i++){
+      float fi=float(i); if(fi>np*q) break;
+      vec3 dir=normalize(vec3(h11(fi*1.3)-.5,h11(fi*2.7)-.5,h11(fi*4.1)-.5));
+      float rr=(.62+.3*h11(fi*5.9))+burst*(1.2+2.2*h11(fi*7.7));
+      vec3 pp=dir*rr*hs; pp.xz*=rot(t*(.15+.2*h11(fi))); pp.y+=sin(t*.7+fi)*.03;
+      float s=2.1/(3.2-pp.z);
+      vec2 sp2=pp.xy*s+vec2(0.,hy);
+      float d=length(uv-sp2);
+      float a=(.00045+.0006*burst)/(d*d+.00025)*.02;
+      vec3 pc=mix(vec3(1.,.55,.4),vec3(1.,.85,.75),h11(fi*8.8));
+      col+=pc*a*heart*(.25+.75*fill)*(1.-smoothstep(.6,1.,burst));
+    }
   }
   col+=snowFx(uv);
   // анаморфный блик
-  col+=vec3(1.,.55,.45)*exp(-abs(uv.y-HZ)*40.)*streak*.6+vec3(1.,.8,.7)*streak*.08;
+  col+=vec3(1.,.55,.45)*exp(-abs(uv.y-hy)*40.)*streak*1.3+vec3(1.,.8,.7)*streak*.18;
   // грейд
   col*=1.-.38*dot2(uv*vec2(.7/max(asp,.6),.85));
   col=1.-exp(-col*1.7);
@@ -237,7 +218,7 @@ void main(){
   addEventListener('deviceorientation', e => { if (e.gamma != null) T.par = Math.max(-1, Math.min(1, e.gamma / 30)); }, { passive: true });
 
   const t0 = performance.now(); let last = t0, frames = 0, acc = 0, tt = 0;
-  const fast = { streak: 9, burst: 0.9, glow: 1.2 };
+  const fast = { streak: 9, burst: 2.2 };
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; tt += dt * (RM ? 0.25 : 1);
     for (const k in T) S[k] += (T[k] - S[k]) * Math.min(1, dt * (fast[k] || 2.6));
