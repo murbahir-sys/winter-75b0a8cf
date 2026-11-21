@@ -14,7 +14,6 @@
   // ---------- тексты ----------
   $$('[data-t]').forEach(el => { const v = X[el.dataset.t]; if (v != null) el.textContent = v; });
   document.title = 'Для тебя, ' + C.her.name;
-  $('#hudFor').textContent = 'для ' + (C.her.name === 'Лера' ? 'Леры' : C.her.name);
   $('#wish').placeholder = X.wishPlaceholder;
   ['#chatAsk', '#chatDate'].forEach(s => { $(s).href = tgUrl(X.chatMsg); });
   $('#laterSend').href = tgUrl(X.laterMsg);
@@ -24,46 +23,53 @@
     el.innerHTML = el.textContent.split(' ').map(w => `<span class="split-w" aria-hidden="true">${[...w].map(ch => `<span class="split-c">${esc(ch)}</span>`).join('')}</span>`).join(' ');
   });
 
-  // зерно плёнки (как на её ретро-камере)
+  // лёгкое зерно, чтобы градиенты не «ступенились»
   (function () { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const d = x.createImageData(128, 128);
     for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
     x.putImageData(d, 0, 0); $('.grain').style.backgroundImage = `url(${c.toDataURL()})`; })();
-  // таймкод
-  (function () { const t0 = Date.now(), el = $('#tc'); setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000);
-    el.textContent = [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join(':'); }, 1000); })();
 
   // ---------- частицы (canvas) ----------
   const fx = $('#fx'), fc = fx.getContext('2d'); let parts = [], fxOn = false;
   function fxSize() { const d = Math.min(devicePixelRatio || 1, 2); fx.width = innerWidth * d; fx.height = innerHeight * d; fc.setTransform(d, 0, 0, d, 0, 0); }
   addEventListener('resize', fxSize); fxSize();
-  function heartPath(s) { fc.beginPath(); fc.moveTo(0, s * .3); fc.bezierCurveTo(-s * .05, s * .1, -s * .5, -s * .05, -s * .5, -s * .35); fc.bezierCurveTo(-s * .5, -s * .65, -s * .1, -s * .7, 0, -s * .42); fc.bezierCurveTo(s * .1, -s * .7, s * .5, -s * .65, s * .5, -s * .35); fc.bezierCurveTo(s * .5, -s * .05, s * .05, s * .1, 0, s * .3); fc.closePath(); }
   function burst(x, y, n = 40, spread = 1) {
     if (RM) n = Math.round(n / 3);
-    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (2 + Math.random() * 6) * spread;
-      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, s: 6 + Math.random() * 12, life: 1, k: i % 3, c: ['#e3264c', '#ffb48f', '#fff3ec'][i % 3] }); }
+    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (0.6 + Math.random() * 2.6) * spread;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1.2, s: 1 + Math.random() * 2.2, life: 1, d: 0.008 + Math.random() * 0.01, c: ['255,180,143', '255,236,226', '227,38,76'][i % 3] }); }
     if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); }
   }
   function fxLoop() {
     fc.clearRect(0, 0, innerWidth, innerHeight);
     parts = parts.filter(p => p.life > 0);
-    for (const p of parts) { p.vy += .12; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life -= .012;
-      fc.save(); fc.translate(p.x, p.y); fc.rotate(p.r); fc.globalAlpha = Math.max(0, p.life); fc.fillStyle = p.c;
-      if (p.k === 0) { heartPath(p.s); fc.fill(); } else if (p.k === 1) { fc.beginPath(); fc.ellipse(0, 0, p.s * .22, p.s * .55, 0, 0, 6.29); fc.fill(); } else { fc.beginPath(); fc.arc(0, 0, p.s * .14, 0, 6.29); fc.fill(); }
-      fc.restore(); }
+    fc.globalCompositeOperation = 'lighter';
+    for (const p of parts) { p.vy += .015; p.vx *= .97; p.vy *= .97; p.x += p.vx; p.y += p.vy; p.life -= p.d;
+      const a = Math.max(0, p.life), r = p.s * 4, g = fc.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+      g.addColorStop(0, `rgba(${p.c},${a})`); g.addColorStop(.25, `rgba(${p.c},${a * .5})`); g.addColorStop(1, `rgba(${p.c},0)`);
+      fc.fillStyle = g; fc.beginPath(); fc.arc(p.x, p.y, r, 0, 6.29); fc.fill(); }
+    fc.globalCompositeOperation = 'source-over';
     if (parts.length) requestAnimationFrame(fxLoop); else { fxOn = false; fc.clearRect(0, 0, innerWidth, innerHeight); }
   }
 
   // ---------- навигация ----------
   const ORDER = ['intro', 'ask', 'yes', 'city', 'date', 'act', 'wish', 'final'];
   const WIDE = innerWidth > 760 && innerWidth / innerHeight > 1.15;
+  // позиция сердца: экранная доля сверху → координата шейдера (uv нормирован по меньшей стороне)
+  const md = () => Math.min(innerWidth, innerHeight);
+  const yAt = f => (0.5 - f) * innerHeight / md();
+  const HERO = WIDE ? { hx: 0, hy: yAt(0.47), hs: 0.2 } : { hx: 0, hy: yAt(0.47), hs: 0.25 };
+  const MINI = WIDE ? { hx: -0.2 * innerWidth / innerHeight, hy: yAt(0.5), hs: 0.11 } : { hx: 0, hy: yAt(0.2), hs: 0.1 };
   const GLS = {
-    intro: { heart: 1, burst: 0, tooth: 0, tint: 0, hy: -0.06, hs: 0.95, cam: 0 },
-    ask:   { heart: 0, tooth: 1, sad: 0, joy: 0, ty: WIDE ? 0.0 : 0.25, tx: WIDE ? -0.4 : 0, cam: 0.6 },
-    later: { heart: 0, tooth: 1, sad: 0.6, joy: 0, ty: WIDE ? 0.0 : 0.25, tx: WIDE ? -0.4 : 0, cam: 0.5 },
-    yes:   { heart: 0, tooth: 0, tint: 0.6, cam: 1.2 },
-    city:  { heart: 0, tooth: 0, tint: 0.3, cam: 1.8 }, date: { heart: 0, tint: 0.45, cam: 2.4 }, act: { heart: 0, tint: 0.3, cam: 3.0 }, wish: { heart: 0, tint: 0.7, cam: 3.6 },
-    final: { heart: 0.85, burst: 0, fill: 1, tint: 1, hy: 0.28, hs: 0.42, cam: 4.2, tooth: 0 },
+    intro: Object.assign({ heart: 1, burst: 0, glow: 0, fill: 0, tint: 0, cam: 0 }, HERO),
+    ask:   Object.assign({ heart: 1, fill: 1, glow: 1, cam: 0.6 }, MINI),
+    later: Object.assign({ heart: 0.7, fill: 0.45, glow: 0.6, cam: 0.5 }, MINI),
+    yes:   Object.assign({ heart: 1, fill: 1, glow: 1, tint: 0.6, cam: 1.2 }, WIDE ? { hx: 0, hy: yAt(0.2), hs: 0.08 } : MINI),
+    city:  { heart: 0, glow: 1, tint: 0.3, cam: 1.8 }, date: { heart: 0, glow: 1, tint: 0.45, cam: 2.4 }, act: { heart: 0, glow: 1, tint: 0.3, cam: 3.0 }, wish: { heart: 0, glow: 1, tint: 0.7, cam: 3.6 },
+    final: { heart: 0, glow: 1, tint: 1, cam: 4.2 },
   };
+  // зона удержания — ровно над сердцем
+  function placeHold() { const b = $('#hold'); if (!b) return; const m = md(), cy = innerHeight / 2 - HERO.hy * m, sz = Math.max(170, HERO.hs * m * 1.9);
+    Object.assign(b.style, { top: cy + 'px', width: sz + 'px', height: sz + 'px' }); document.documentElement.style.setProperty('--heart-y', cy + 'px'); document.documentElement.style.setProperty('--heart-s', HERO.hs * m * 1.25 + 'px'); }
+  placeHold(); addEventListener('resize', placeHold);
   let cur = 'intro', busy = false;
   function animIn(scr) {
     const chars = $$('.split-c', scr), rest = $$(':scope > :not(h1):not(h2):not(.head):not(.hold), .head > p, .cities > li, .acts > .act, .acts > .sep, .month, .ask-text > :not(h2)', scr);
@@ -81,7 +87,10 @@
       if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal();
       animIn(to); busy = false;
     };
-    GL.set(GLS[name]);
+    if (cur === 'intro' && GL.state.burst > 0.01 && !opt.instant) {
+      // огонёк рассыпался → гаснем → маленькое горящее сердечко над вопросом
+      GL.set({ heart: 0, glow: 1 }); setTimeout(() => { GL.jump({ burst: 0, fill: 1, hx: GLS[name].hx, hy: GLS[name].hy, hs: GLS[name].hs, heart: 0 }); GL.set(GLS[name]); }, 900);
+    } else GL.set(GLS[name]);
     if (opt.instant || !G || RM) { swap(); return; }
     busy = true;
     streak();
@@ -99,20 +108,20 @@
   // ---------- 1. держи сердце ----------
   (function () {
     const btn = $('#hold'), bar = $('#holdBar'); let holding = false, p = 0, done = false, last = 0;
-    const down = e => { if (done) return; e.preventDefault(); holding = true; GL.set({ beat: 1 }); };
-    const up = () => { holding = false; GL.set({ beat: 0 }); };
+    const down = e => { if (done) return; e.preventDefault(); holding = true; GL.set({ beat: 1 }); btn.classList.add('holding'); };
+    const up = () => { holding = false; GL.set({ beat: 0 }); btn.classList.remove('holding'); };
     btn.addEventListener('pointerdown', down); addEventListener('pointerup', up); addEventListener('pointercancel', up); btn.addEventListener('contextmenu', e => e.preventDefault());
     btn.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') down(e); }); btn.addEventListener('keyup', up);
     function tick(now) {
       const dt = Math.min(0.12, (now - (last || now)) / 1000); last = now;
       p += holding ? dt / 2.2 : -dt / 1.6; p = Math.max(0, Math.min(1, p));
       bar.style.transform = `scaleX(${p})`; GL.set({ fill: p }); GL.state.fill = GL.state.fill + (p - GL.state.fill) * 0.5;
-      document.querySelector('.fb-heart').style.filter = `saturate(${0.6 + p * 0.8}) brightness(${0.7 + p * 0.6}) drop-shadow(0 20px 50px rgba(255,60,80,${0.3 + p * 0.5}))`;
+      document.documentElement.style.setProperty('--fill', p.toFixed(3));
       if (holding && navigator.vibrate && Math.random() < dt * 2.5) navigator.vibrate(6);
       if (p >= 1 && !done) { done = true; holding = false; if (navigator.vibrate) navigator.vibrate([30, 40, 60]);
-        const r = btn.getBoundingClientRect(); GL.set({ burst: 1, beat: 0 });
-        setTimeout(() => burst(r.left + r.width / 2, r.top + r.height / 2, 60, 1.2), 250);
-        setTimeout(() => go('ask'), 1300); return; }
+        btn.classList.remove('holding'); GL.set({ burst: 1, beat: 0, glow: 1 }); document.body.classList.add('lit');
+        if (!GL.ok) { const r = btn.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 50, 1); }
+        setTimeout(() => go('ask'), 1700); return; }
       if (!done) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -125,7 +134,7 @@
     function flee(e) {
       if (n >= MAXFLEE) return false;
       if (e) e.preventDefault();
-      n++; fledAt = performance.now(); GL.set({ sad: 1 }); setTimeout(() => GL.set({ sad: 0 }), 900);
+      n++; fledAt = performance.now();
       taunt.textContent = X.noTaunts[n - 1];
       const r = no.getBoundingClientRect(); const avoid = [yes, taunt, $('#chatAsk'), ...$$('[data-screen="ask"] h2, [data-screen="ask"] .sub')].map(el => el.getBoundingClientRect());
       if (!no.classList.contains('free')) { no.style.left = r.left + 'px'; no.style.top = r.top + 'px'; no.classList.add('free'); }
@@ -137,14 +146,13 @@
       return true;
     }
     no.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') flee(e); });
-    no.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { if (flee(e) === false) GL.set({ sad: 0.7 }); } });
-    no.addEventListener('pointerleave', () => { if (n >= MAXFLEE) GL.set({ sad: 0 }); });
+    no.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') flee(e); });
     no.addEventListener('click', e => { if (performance.now() - fledAt < 600) return; if (n < MAXFLEE) { flee(e); return; } resetNo(); go('later'); });
     function resetNo() { no.classList.remove('free'); no.style.left = no.style.top = no.style.transform = ''; }
     yes.addEventListener('click', () => {
-      GL.set({ joy: 1, sad: 0 }); const r = yes.getBoundingClientRect(); burst(r.left + r.width / 2, r.top, 50);
+      GL.set({ beat: 1 }); const r = yes.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 36);
       if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
-      resetNo(); setTimeout(() => { GL.set({ joy: 0 }); go('yes'); }, 1000);
+      resetNo(); setTimeout(() => { GL.set({ beat: 0 }); go('yes'); }, 700);
     });
     $('#laterCoffee').addEventListener('click', () => { if (!st.acts.includes(C.short.id)) st.acts.unshift(C.short.id); save(); go('city'); });
   })();
@@ -232,15 +240,14 @@
   let cdTimer;
   function renderFinal() {
     const c = city(), acts = chosen(), d0 = st.dates[0];
-    $('#ticket').innerHTML = `<i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
-      <div class="rec"><span>● REC</span><span>${d0 ? d0.split('-').reverse().join('.') : ''}${st.time && st.time !== 'any' ? ' · ' + st.time : ''}</span></div>
+    $('#ticket').innerHTML = `<div class="tk-head"><span>${esc(C.her.name)} · ${esc(C.from.name)}</span><span>${d0 ? d0.split('-').reverse().join('.') : ''}${st.time && st.time !== 'any' ? ' · ' + st.time : ''}</span></div>
       <dl><dt>Где</dt><dd>${esc(c ? c.name : '—')}</dd>
       <dt>${st.dates.length > 1 ? 'Дни' : 'Когда'}</dt><dd>${st.dates.map(d => esc(fmtDate(d))).join('<br>') || '—'}<br><span style="color:var(--mute)">${esc(timeTxt())}</span></dd>
       <dt>Планы</dt><dd>${acts.map(a => esc(a.title)).join('<br>') || '—'}</dd>
       <dt>От тебя</dt><dd>${st.wish && st.wish.trim() ? esc(st.wish.trim()).replace(/\n/g, '<br>') : '—'}</dd></dl>`;
     const msg = message(), tg = $('#sendTg');
     tg.querySelector('span').textContent = X.sendTg; tg.href = tgUrl(msg);
-    tg.onclick = e => { copy(true); if (!nick || /MURAD_NICK_HERE/.test(nick)) e.preventDefault(); };
+    tg.onclick = e => { copy(true); if (!nick) e.preventDefault(); };
     const vk = $('#sendVk'); if (C.VK_ID) { vk.hidden = false; vk.textContent = X.sendVk; vk.href = `https://vk.me/${encodeURIComponent(C.VK_ID)}`; vk.onclick = () => copy(); }
     $('#copy span').textContent = X.copy;
     const sh = $('#share'); if (navigator.share) { sh.hidden = false; sh.textContent = X.share; sh.onclick = () => navigator.share({ text: msg }).catch(() => {}); }
