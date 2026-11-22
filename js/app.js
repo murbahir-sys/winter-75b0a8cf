@@ -84,6 +84,14 @@
   function fwFallback() { if (document.hidden) return; const cx = innerWidth * (.2 + Math.random() * .6), cy = innerHeight * (.1 + Math.random() * .18);
     for (let i = 0; i < 22; i++) { const a = i / 22 * 6.283, v = 1.6 + Math.random() * .5; parts.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 0, vr: 0, s: 14 + Math.random() * 8, life: 1, k: 3 }); }
     if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); } }
+  // скрытая отладка: #fps в адресе
+  if (/fps/.test(location.hash)) { const d = document.createElement('div'); d.id = 'fpsdbg'; document.body.appendChild(d);
+    let n = 0, t0 = performance.now(), lf = t0; const f = now => { if (now - lf > 1000) { n = 0; t0 = now; } lf = now; n++; if (now - t0 >= 500) { const fps = n * 1000 / (now - t0); n = 0; t0 = now;
+      const qq = GL.ok && GL.quality ? GL.quality() : null;
+      d.textContent = qq ? `${fps.toFixed(0)} fps · уровень ${qq.level}/4 · ${qq.w}×${qq.h} · q ${qq.q}` : `${fps.toFixed(0)} fps · без WebGL`; }
+      requestAnimationFrame(f); }; requestAnimationFrame(f); }
+  if (!GL.ok) requestAnimationFrame(() => document.documentElement.classList.add('gl-ready'));
+
   // последняя точка касания — центр волны перехода
   let lastPt = [innerWidth / 2, innerHeight * 0.7];
   document.addEventListener('pointerdown', e => { lastPt = [e.clientX, e.clientY]; }, { passive: true, capture: true });
@@ -95,10 +103,14 @@
   addEventListener('pointerup', () => { touching = false; }, { passive: true }); addEventListener('pointercancel', () => { touching = false; }, { passive: true });
   addEventListener('pointermove', e => { if (RM || (e.pointerType !== 'mouse' && !touching)) return; if (e.target.closest && e.target.closest('input,textarea')) return;
     const now = performance.now(); if (now - trailT < 24) return; trailT = now;
-    if (parts.filter(p => p.k === 3).length > 40) return;
+    if (parts.filter(p => p.k === 3).length > (GL.ok && GL.level != null && GL.level < 2 ? 18 : 40)) return;
     for (let i = 0; i < 2; i++) parts.push({ x: e.clientX + (Math.random() - .5) * 8, y: e.clientY + (Math.random() - .5) * 8, vx: (Math.random() - .5) * .6, vy: -.2 - Math.random() * .5, r: 0, vr: 0, s: 10 + Math.random() * 16, life: .9, k: 3 });
     if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); } }, { passive: true });
   // микроанимация выбора: карточки, чипы, дни — мягкий «отклик»
+  // тактильный отклик: 10 мс на выбор карточки и главные кнопки (где поддерживается и без уменьшенного движения)
+  const rich = () => GL.ok && GL.level >= 4; // «дорогие» эффекты DOM — только когда сцена уверенно держит 60 к/с
+  const buzz = () => { if (!RM && navigator.vibrate && (!navigator.userActivation || navigator.userActivation.isActive)) try { navigator.vibrate(10); } catch (e) {} };
+  document.addEventListener('click', e => { if (e.target.closest('.chip, .day.ok, .mood, .city, .act, .pl-want, .btn-primary')) buzz(); });
   document.addEventListener('click', e => { if (RM) return; const el = e.target.closest('.chip, .day.ok, .mood, .city, .act'); if (!el) return;
     const key = '.' + el.classList[0] + Object.entries(el.dataset).map(([k, v]) => `[data-${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}="${CSS.escape(v)}"]`).join('');
     requestAnimationFrame(() => { const n = el.isConnected ? el : $(key); if (!n || !n.animate) return;
@@ -135,11 +147,13 @@
 
   // ---------- частицы (canvas) ----------
   const fx = $('#fx'), fc = fx.getContext('2d'); let parts = [], fxOn = false;
-  function fxSize() { const d = Math.min(devicePixelRatio || 1, 2); fx.width = innerWidth * d; fx.height = innerHeight * d; fc.setTransform(d, 0, 0, d, 0, 0); }
+  // мягкие частицы: 1.5× хватает, а очистка холста в 1.8 раза дешевле
+  function fxSize() { const d = Math.min(devicePixelRatio || 1, 1.5); fx.width = innerWidth * d; fx.height = innerHeight * d; fc.setTransform(d, 0, 0, d, 0, 0); }
   addEventListener('resize', fxSize); fxSize();
   function heartPath(s) { fc.beginPath(); fc.moveTo(0, s * .3); fc.bezierCurveTo(-s * .05, s * .1, -s * .5, -s * .05, -s * .5, -s * .35); fc.bezierCurveTo(-s * .5, -s * .65, -s * .1, -s * .7, 0, -s * .42); fc.bezierCurveTo(s * .1, -s * .7, s * .5, -s * .65, s * .5, -s * .35); fc.bezierCurveTo(s * .5, -s * .05, s * .05, s * .1, 0, s * .3); fc.closePath(); }
   function burst(x, y, n = 40, spread = 1) {
     if (RM) n = Math.round(n / 3);
+    if (GL.ok && GL.level != null) n = Math.round(n * [0.4, 0.6, 0.8, 1, 1][GL.level]);
     for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (2 + Math.random() * 6) * spread;
       parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3, r: Math.random() * 6.28, vr: (Math.random() - .5) * .3, s: 6 + Math.random() * 12, life: 1, k: i % 3, c: ['#e3264c', '#ffb48f', '#fff3ec'][i % 3] }); }
     if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); }
@@ -173,7 +187,8 @@
     const chars = $$('.split-c', scr), words = $$('.split-wd', scr);
     const rest = $$(':scope > :not(h1):not(h2):not(.head):not(.hold):not(.emblem), .head > p, .cities > li, .acts > .act, .acts > .sep, .month, .ask-text > :not(h2):not(.emblem):not(p.sub)', scr).filter(e => !e.querySelector('.split-wd') && !e.classList.contains('split-wd') && e.id !== 'ticket' && e.id !== 'cd');
     if (!G || RM) return;
-    if (chars.length) G.fromTo(chars, { yPercent: 105 * dir, rotateX: -70 * dir, opacity: 0, filter: 'blur(8px)' }, { yPercent: 0, rotateX: 0, opacity: 1, filter: 'blur(0px)', duration: 1.25, ease: 'expo.out', stagger: { each: 0.03, from: 'start' }, delay: 0.12, clearProps: 'filter' });
+    if (chars.length) { const bl = rich(); // размытие букв — только на самом мощном уровне, иначе лишь transform/opacity
+      G.fromTo(chars, Object.assign({ yPercent: 105 * dir, rotateX: -70 * dir, opacity: 0 }, bl ? { filter: 'blur(8px)' } : {}), Object.assign({ yPercent: 0, rotateX: 0, opacity: 1, duration: 1.25, ease: 'expo.out', stagger: { each: 0.03, from: 'start' }, delay: 0.12, clearProps: bl ? 'filter,willChange' : 'willChange' }, bl ? { filter: 'blur(0px)' } : {})); }
     if (words.length) G.fromTo(words, { y: 12 * dir, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'power3.out', stagger: 0.014, delay: 0.32, clearProps: 'transform' });
     if (rest.length) G.fromTo(rest, { y: 22 * dir, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'expo.out', stagger: 0.05, delay: 0.42, clearProps: 'transform' });
   }
@@ -207,16 +222,18 @@
     if (GL.ok && GL.uv) { const [rx, ry] = GL.uv(lastPt[0], lastPt[1]), rw = { p: 0 }; GL.jump({ rx, ry, rp: 0 });
       G.to(rw, { p: 1, duration: 1.5, ease: 'power1.out', onUpdate: () => GL.jump({ rp: rw.p }) }); }
     else { const r = $('.tapring'); r.style.left = lastPt[0] + 'px'; r.style.top = lastPt[1] + 'px'; r.classList.remove('go'); void r.offsetWidth; r.classList.add('go'); }
+    if (GL.pulse) GL.pulse(); // отложенная смена разрешения сцены — в момент «наезда», незаметно
     GL.set({ zm: 1, lk: 1 }); setTimeout(() => GL.set({ zm: 0 }), 380); setTimeout(() => GL.set({ lk: 0 }), 650);
     G.to(sw, { p: dir > 0 ? 1 : -1, duration: 1.1, ease: 'power2.inOut', onUpdate: () => GL.jump({ lp: sw.p }) });
     if (!GL.ok) document.documentElement.style.setProperty('--lk', dir), $('.leak').classList.remove('go'), void $('.leak').offsetWidth, $('.leak').classList.add('go');
     const ghost = embGhost(from);
-    G.to(from, { opacity: 0, y: -30 * dir, scale: 0.965, filter: 'blur(8px)', duration: 0.48, ease: 'power2.in', onComplete: () => {
+    const hq = rich(); // смаз всего экрана и маска-шторка — дорогие (перерисовка каждый кадр); на среднем телефоне — только transform/opacity
+    G.to(from, Object.assign({ opacity: 0, y: -30 * dir, scale: 0.965, duration: 0.48 }, hq ? { filter: 'blur(8px)' } : {}, { ease: 'power2.in', onComplete: () => {
       G.set(from, { clearProps: 'all' });
       done(); if (ghost) embLand(ghost, to);
-      G.fromTo(to, { y: 26 * dir, scale: 1.015 }, { y: 0, scale: 1, duration: 1.05, ease: 'expo.out', clearProps: 'transform' });
-      if (to.animate) to.animate([{ clipPath: dir > 0 ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, easing: 'cubic-bezier(.22,.8,.24,1)' });
-    } });
+      G.fromTo(to, Object.assign({ y: 26 * dir, scale: 1.015 }, hq ? {} : { opacity: 0 }), Object.assign({ y: 0, scale: 1, duration: 1.05, ease: 'expo.out', clearProps: 'transform,opacity' }, hq ? {} : { opacity: 1, duration: 0.95 }));
+      if (hq && to.animate) to.animate([{ clipPath: dir > 0 ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, easing: 'cubic-bezier(.22,.8,.24,1)' });
+    } }));
   }
   function go(name, opt = {}) {
     if ((name === cur && !opt.force) || busy) return;
@@ -247,7 +264,7 @@
 
   // ---------- 1. держи сердце ----------
   (function () {
-    const btn = $('#hold'), bar = $('#holdBar'); let holding = false, p = 0, done = false, last = 0;
+    const btn = $('#hold'), bar = $('#holdBar'); let holding = false, p = 0, done = false, last = 0, lastP = -1; const fbh = document.querySelector('.fb-heart');
     const down = e => { if (done) return; e.preventDefault(); holding = true; GL.set({ beat: 1 }); };
     const up = () => { holding = false; GL.set({ beat: 0 }); };
     btn.addEventListener('pointerdown', down); addEventListener('pointerup', up); addEventListener('pointercancel', up); btn.addEventListener('contextmenu', e => e.preventDefault());
@@ -255,10 +272,10 @@
     function tick(now) {
       const dt = Math.min(0.12, (now - (last || now)) / 1000); last = now;
       p += holding ? dt / 2.2 : -dt / 1.6; p = Math.max(0, Math.min(1, p));
-      bar.style.transform = `scaleX(${p})`; GL.set({ fill: p }); GL.state.fill = GL.state.fill + (p - GL.state.fill) * 0.5;
-      document.querySelector('.fb-heart').style.filter = `saturate(${0.6 + p * 0.8}) brightness(${0.7 + p * 0.6}) drop-shadow(0 20px 50px rgba(255,60,80,${0.3 + p * 0.5}))`;
-      if (holding && navigator.vibrate && Math.random() < dt * 2.5) navigator.vibrate(6);
-      if (p >= 1 && !done) { done = true; holding = false; if (navigator.vibrate) navigator.vibrate([30, 40, 60]);
+      if (p !== lastP || holding) { lastP = p; bar.style.transform = `scaleX(${p})`; GL.set({ fill: p }); GL.state.fill = GL.state.fill + (p - GL.state.fill) * 0.5;
+      if (!GL.ok) fbh.style.filter = `saturate(${0.6 + p * 0.8}) brightness(${0.7 + p * 0.6}) drop-shadow(0 20px 50px rgba(255,60,80,${0.3 + p * 0.5}))`;
+      } if (holding && !RM && navigator.vibrate && Math.random() < dt * 2.5) navigator.vibrate(8);
+      if (p >= 1 && !done) { done = true; holding = false; if (!RM && navigator.vibrate) navigator.vibrate(12);
         const r = btn.getBoundingClientRect(); GL.set({ burst: 1, beat: 0 });
         setTimeout(() => burst(r.left + r.width / 2, r.top + r.height / 2, 60, 1.2), 250);
         setTimeout(() => go('ask'), 1300); return; }

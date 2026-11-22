@@ -2,7 +2,7 @@
    стеклянное переливающееся сердце. Один шейдер, без библиотек. */
 (function () {
   const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0, rx: 0, ry: 0, rp: 1, fw: 0, sy: 0 };
+  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0, rx: 0, ry: 0, rp: 1, fw: 0, sy: 0, lv: 3 };
   const T = Object.assign({}, S);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
@@ -14,7 +14,7 @@
   const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   const fs = `
 precision highp float;
-uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw,sy;
+uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw,sy,lv;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
@@ -26,7 +26,7 @@ float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i
 vec3 fireworks(vec2 uv,float asp){
   vec3 c=vec3(0.);
   for(int k=0;k<3;k++){
-    float fk=float(k), P=3.4+fk*.7, tk=t+fk*1.37, id=floor(tk/P), ph=fract(tk/P);
+    float fk=float(k); if(fk>1.5 && lv<1.5) break; float fw3=fk>1.5?clamp(lv-1.5,0.,1.):1.; float P=3.4+fk*.7, tk=t+fk*1.37, id=floor(tk/P), ph=fract(tk/P);
     vec2 ce=vec2((h11(id*3.1+fk*7.)-.5)*1.4*min(asp,1.4),.3+.42*h11(id*5.7+fk));
     vec3 hue=mix(vec3(1.,.45,.3),mix(vec3(1.,.82,.55),vec3(1.,.3,.45),h11(id+fk*3.)),h11(id*9.1+fk));
     float e=pow(1.-ph,1.6)*1.5, r=.24*(1.-pow(1.-min(ph*1.4,1.),3.));
@@ -35,9 +35,9 @@ vec3 fireworks(vec2 uv,float asp){
     float dc=length(uv-ce); if(dc>r+.06) { c+=hue*exp(-dc*9.)*e*e*.02; continue; }
     // только ближайшие 3 искры по углу вместо перебора всех 20
     vec2 rv=uv-ce+vec2(0.,ph*ph*.06); float ai=floor(atan(rv.y,rv.x)/6.2832*20.+.5);
-    for(int j=-1;j<=1;j++){ float fi=mod(ai+float(j)+20.,20.);
+    for(int j=-1;j<=1;j++){ if(j!=0 && lv<.8) continue; float fi=mod(ai+float(j)+20.,20.);
       float a=fi/20.*6.2832+(h11(fi+id)-.5)*.12; vec2 pp=ce+vec2(cos(a),sin(a))*r*(.85+.15*h11(fi*3.+id))-vec2(0.,ph*ph*.06);
-      float d=length(uv-pp); c+=hue*(.00006/(d*d+.00004))*e*(.6+.4*sin(t*30.+fi)); }
+      float d=length(uv-pp); c+=hue*(.00006/(d*d+.00004))*e*fw3*(.6+.4*sin(t*30.+fi)); }
     c+=hue*exp(-dc*9.)*e*e*.035;
   }
   return c;
@@ -70,7 +70,8 @@ vec3 world(vec2 uv,float asp){
   for(int i=0;i<3;i++){
     float fi=float(i);
     float x=w*(1.0+fi*.7)+cam*(.08+fi*.22)+par*(.01+fi*.02);
-    float hgt=HZ+.01+(0.34-fi*.09)*ridge(x*(1.1+fi*.8),fi+1.)*(.35+.65*bay);
+    // хребет считаем только в полосе, где гора вообще может быть (выше HZ+.37 и в море — не нужен): картинка та же, кадр дешевле
+    float hgt=(uv.y>HZ && uv.y<HZ+.37)?HZ+.01+(0.34-fi*.09)*ridge(x*(1.1+fi*.8),fi+1.)*(.35+.65*bay):HZ;
     if(uv.y<hgt && uv.y>HZ){
       float k=fi/2.;
       vec3 mc=mix(vec3(.13,.07,.10),vec3(.025,.012,.02),k);
@@ -93,9 +94,10 @@ vec3 world(vec2 uv,float asp){
     col+=vec3(.42,.22,.22)*fog*(.16-fi*.03);
   }
   // плотный дрейфующий туман у воды: два слоя с параллаксом — глубина
-  if(abs(uv.y-HZ-.02)<.22){
-    float fb=n2(vec2(w*3.+t*.05+par*.04,uv.y*9.))*.6+n2(vec2(w*7.-t*.08+par*.09,uv.y*16.+3.))*.4;
-    col+=vec3(.36,.2,.22)*smoothstep(.45,.85,fb)*exp(-abs(uv.y-HZ-.02)*16.)*.22; }
+  if(lv>1. && abs(uv.y-HZ-.02)<.22){
+    float fb=n2(vec2(w*3.+t*.05+par*.04,uv.y*9.))*.6;
+    fb+=(lv>2.5?n2(vec2(w*7.-t*.08+par*.09,uv.y*16.+3.)):.5)*.4;
+    col+=vec3(.36,.2,.22)*smoothstep(.45,.85,fb)*exp(-abs(uv.y-HZ-.02)*16.)*.22*clamp(lv-1.,0.,1.); }
   // огни набережной
   if(abs(uv.y-HZ-.006)<.02){ col+=vec3(1.,.7,.4)*lightsRow(w)*smoothstep(.006,0.,abs(uv.y-HZ-.006))*1.2; }
   // море
@@ -108,7 +110,7 @@ vec3 world(vec2 uv,float asp){
     sea+=vec3(.6,.25,.15)*exp(-dy*12.)*.25;
     // лунная дорожка
     sea+=vec3(1.,.85,.7)*exp(-abs(uv.x-mp.x)*18.)*exp(-dy*3.)*rip*.35;
-    float gl1=step(.986,h21(floor(vec2((uv.x-mp.x)*240.,dy*520./(dy*6.+.3)))+floor(t*5.)));
+    float gl1=lv<1.?0.:step(.986,h21(floor(vec2((uv.x-mp.x)*240.,dy*520./(dy*6.+.3)))+floor(t*5.)));
     sea+=vec3(1.,.9,.78)*gl1*exp(-abs(uv.x-mp.x)*(9.+dy*30.))*exp(-dy*4.)*.55; // блёстки на лунной дорожке
     if(fw>.01) sea+=fireworks(vec2(uv.x+(rip-.5)*.02,2.*HZ-uv.y),asp)*fw*exp(-dy*3.)*.35;
     col=sea;
@@ -119,7 +121,7 @@ vec3 world(vec2 uv,float asp){
 vec3 snowFx(vec2 uv){
   vec3 c=vec3(0.);
   for(int k=0;k<3;k++){
-    float fk=float(k); float s=6.+fk*5.;
+    float fk=float(k); if(fk>1.5 && lv<1.) break; float s=6.+fk*5.;
     vec2 p=uv*s; p.y+=t*(.35+.18*fk); p.x+=sin(t*.25+fk*2.)*.6+cam*(1.+fk);
     vec2 ce=floor(p); vec2 f=fract(p)-.5;
     vec2 o=(vec2(h21(ce),h21(ce+5.))-.5)*.7;
@@ -127,9 +129,10 @@ vec3 snowFx(vec2 uv){
     c+=vec3(1.,.93,.9)*smoothstep(.07-fk*.015,0.,d)*step(.55,h21(ce+9.))*(.45-fk*.11);
   }
   // близкие крупные хлопья в расфокусе — глубина
+  if(lv<2.) return c;
   vec2 p=uv*2.6; p.y+=t*.95; p.x+=sin(t*.2)*.4+cam*3.5+par*.25;
   vec2 ce=floor(p); vec2 f=fract(p)-.5; vec2 o=(vec2(h21(ce+2.),h21(ce+7.))-.5)*.6;
-  c+=vec3(1.,.9,.86)*smoothstep(.17,.02,length(f-o))*step(.78,h21(ce+11.))*.07;
+  c+=vec3(1.,.9,.86)*smoothstep(.17,.02,length(f-o))*step(.78,h21(ce+11.))*.07*clamp(lv-2.,0.,1.);
   return c;
 }
 
@@ -158,7 +161,7 @@ void main(){
   vec2 uv0=uv; uv=uv/(1.+zm*.06)+vec2(0.,pary*.012-sy*.09);
   // волна-преломление от точки касания при переходе
   float ring=0.;
-  if(rp<.999){ vec2 rv=uv0-vec2(rx,ry); float rd0=length(rv); ring=exp(-pow((rd0-rp*1.9)*9.,2.))*(1.-rp)*(1.-rp);
+  if(rp<.999 && lv>.5){ vec2 rv=uv0-vec2(rx,ry); float rd0=length(rv); ring=exp(-pow((rd0-rp*1.9)*9.,2.))*(1.-rp)*(1.-rp);
     uv+=rv/(rd0+.001)*ring*.06; }
   vec3 col=world(uv,asp);
   vec3 ro=vec3(0.,0.,3.2);
@@ -210,6 +213,8 @@ void main(){
     }
     // частицы: пыль вокруг и взрыв
     float np=24.+40.*burst;
+    // пыль вокруг сердца: вдали от него вклад нулевой — пропускаем цикл
+    if(burst>=.999 || (burst<.01 && length(uv-vec2(0.,hy))>hs*1.932/(3.2-.92*hs)+.26)) np=-1.;
     for(int i=0;i<64;i++){
       float fi=float(i); if(fi>np*q) break;
       vec3 dir=normalize(vec3(h11(fi*1.3)-.5,h11(fi*2.7)-.5,h11(fi*4.1)-.5));
@@ -249,14 +254,23 @@ void main(){
   const U = {}; ['R', 't', 'q', ...Object.keys(S)].forEach(k => U[k] = gl.getUniformLocation(pr, k));
   api.ok = true; document.documentElement.classList.add('gl');
 
-  // качество: слабым устройствам — меньше пикселей и шагов
+  // адаптивное качество: 5 уровней, переключение по реальному fps с гистерезисом
   const weak = (navigator.hardwareConcurrency || 4) <= 4 || (navigator.deviceMemory || 4) <= 3;
-  let scale = weak ? 0.6 : 0.85, q = weak ? 0.7 : 1;
+  const LV = [{ s: 0.42, q: 0.5 }, { s: 0.55, q: 0.65 }, { s: 0.7, q: 0.8 }, { s: 0.85, q: 1 }, { s: 1, q: 1 }];
+  const lock = /lv=([0-4])/.exec(location.hash); // отладка: #fps&lv=2 — зафиксировать уровень
+  let level = lock ? +lock[1] : weak ? 2 : 3, scale = LV[level].s, q = LV[level].q, pendingSize = false;
+  S.lv = T.lv = level;
   function size() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2) * scale;
     let w = innerWidth * dpr, h = innerHeight * dpr; const k = Math.min(1, 1400 / Math.max(w, h));
-    cv.width = Math.round(w * k); cv.height = Math.round(h * k); gl.viewport(0, 0, cv.width, cv.height);
+    cv.width = Math.round(w * k); cv.height = Math.round(h * k); gl.viewport(0, 0, cv.width, cv.height); pendingSize = false;
   }
+  function setLevel(n, urgent) { n = Math.max(0, Math.min(4, n)); if (n === level) return; level = n; T.lv = n; // эффекты гаснут плавно через uniform lv
+    scale = LV[n].s; q = LV[n].q; pendingSize = true; if (urgent) size(); } // разрешение меняем в момент перехода экранов — глазу не видно
+  api.pulse = () => { if (pendingSize) size(); };
+  let fpsNow = 60; const ft = [];
+  api.quality = () => ({ level, fps: Math.round(fpsNow), scale: +scale.toFixed(2), q, w: cv.width, h: cv.height, pending: pendingSize });
+  Object.defineProperty(api, 'level', { get: () => level });
   addEventListener('resize', size); size();
   // параллакс от пальца/мыши и наклона
   addEventListener('pointermove', e => { T.par = (e.clientX / innerWidth - .5) * 2; }, { passive: true });
@@ -264,21 +278,36 @@ void main(){
   addEventListener('deviceorientation', e => { if (e.gamma != null) T.par = Math.max(-1, Math.min(1, e.gamma / 30)); if (e.beta != null) T.pary = Math.max(-1, Math.min(1, (e.beta - 45) / 35)); }, { passive: true });
 
   const t0 = performance.now(); let last = t0, frames = 0, acc = 0, tt = 0;
-  const fast = { streak: 9, burst: 2.2, zm: 3.2, lk: 6, fw: 1.6 };
+  const fast = { streak: 9, burst: 2.2, zm: 3.2, lk: 6, fw: 1.6, lv: 1.2 };
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; tt += dt * (RM ? 0.25 : 1);
     for (const k in T) S[k] += (T[k] - S[k]) * Math.min(1, dt * (fast[k] || 2.6));
     gl.uniform2f(U.R, cv.width, cv.height); gl.uniform1f(U.t, tt); gl.uniform1f(U.q, q);
     for (const k in S) gl.uniform1f(U[k], S[k]);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    frames++; acc += dt;
-    if (acc > 1.5) { const fps = frames / acc;
-      if (fps < 42 && scale > 0.4) { scale = Math.max(0.4, scale - 0.12); if (scale < 0.55) q = Math.max(0.5, q - 0.1); size(); }
-      frames = 0; acc = 0; }
+    if (!api.ready) { api.ready = true; requestAnimationFrame(() => document.documentElement.classList.add('gl-ready')); }
+    adapt(now);
     if (!document.hidden) requestAnimationFrame(loop); else running = false;
+  }
+  // замер: первые ~3 с калибровка (раз в 1 с), дальше раз в 2 с; вверх — только после 6 с стабильно высоких кадров
+  let evalAt = 0, warm = 0, good = 0, lastDrop = 0, lastUp = -1e9, upWait = 10000, resumeAt = 0, prevNow = 0;
+  function adapt(now) {
+    const d = now - prevNow; prevNow = now;
+    if (lock) return;
+    if (!warm) warm = now + 700; if (now < warm) return;
+    if (now < resumeAt || d <= 0 || d > 4000) return; ft.push(d); if (ft.length > 90) ft.shift(); // фон/возврат во вкладку отсекает resumeAt
+    if (!evalAt) { evalAt = now + 1000; ft.length = 0; return; } // первые кадры (компиляция, шрифты) не в счёт
+    if (now < evalAt || ft.length < 4) return;
+    const calib = now - t0 < 3200; evalAt = now + (calib ? 1000 : 2000);
+    const sorted = ft.slice().sort((a, b) => a - b), med = sorted[sorted.length >> 1];
+    fpsNow = 1000 / (ft.reduce((a, c) => a + c, 0) / ft.length);
+    const fps = Math.min(fpsNow, 1000 / med);
+    if (fps < (calib ? 50 : 46)) { setLevel(calib ? level - 1 : fps < 15 ? 0 : level - (fps < 30 ? 2 : 1), fps < 35); if (now - lastUp < 15000) upWait = Math.min(upWait * 2, 80000); lastDrop = now; good = 0; ft.length = 0; }
+    else if (1000 / med >= 56 && fpsNow >= 50 && now - lastDrop > upWait) { if (++good >= 3) { setLevel(level + 1, false); lastUp = now; good = 0; ft.length = 0; } }
+    else good = 0;
   }
   let running = true; requestAnimationFrame(loop);
   // вне вкладки — полная пауза, при возврате продолжаем без скачка времени
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && !running) { running = true; last = performance.now(); requestAnimationFrame(loop); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !running) { running = true; last = performance.now(); resumeAt = last + 600; ft.length = 0; requestAnimationFrame(loop); } });
   api.uv = (x, y) => { const m = Math.min(innerWidth, innerHeight); return [(x - innerWidth / 2) / m, (innerHeight / 2 - y) / m]; };
 })();
