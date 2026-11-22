@@ -1,10 +1,10 @@
-(function(){const p=document.getElementById("gl"),f={heart:1,fill:0,burst:0,cam:0,par:0,tint:0,streak:0,beat:0,hy:0,hs:1,mx:0,my:0,mo:0,zm:0,lk:0,lp:0,pary:0,rx:0,ry:0,rp:1,fw:0,sy:0,lv:3},l=Object.assign({},f),N=matchMedia("(prefers-reduced-motion: reduce)").matches,r={ok:!1,rm:N,set(n){Object.assign(l,n)},jump(n){Object.assign(l,n),Object.assign(f,n)},state:f,target:l};window.GL=r;const ae=(navigator.hardwareConcurrency||4)<=4||(navigator.deviceMemory||4)<=3,L=[{s:.42,q:.5},{s:.55,q:.65},{s:.7,q:.8},{s:.85,q:1},{s:1,q:1}],P=/lv=([0-4])/.exec(location.hash);let c=P?+P[1]:ae?2:3,A=L[c].s,z=L[c].q,q=!1,h=0,u=0,d=1,x=1;f.lv=l.lv=c,document.documentElement.classList.toggle("lq",c<2);function b(){d=Math.max(1,Math.round(h*A)),x=Math.max(1,Math.round(u*A)),t&&t.viewport(0,0,d,x),p.style.transform=d<h||x<u?`scale(${(h/d).toFixed(5)},${(u/x).toFixed(5)})`:"",q=!1}function U(){const n=Math.min(window.devicePixelRatio||1,2);let E=innerWidth*n,i=innerHeight*n;const g=Math.min(1,1400/Math.max(E,i));h=Math.round(E*g),u=Math.round(i*g),(p.width!==h||p.height!==u)&&(p.width=h,p.height=u),b()}let t;const S=!!window.WebGLRenderingContext&&!/nogl/.test(location.hash);r.ok=S,S?document.documentElement.classList.add("gl"):document.documentElement.classList.add("no-gl"),S&&requestAnimationFrame(()=>setTimeout(oe,0));function oe(){U();try{t=p.getContext("webgl",{antialias:!1,alpha:!1,powerPreference:"high-performance",preserveDrawingBuffer:!1})}catch{}if(!t){r.ok=!1,document.documentElement.classList.remove("gl"),document.documentElement.classList.add("no-gl"),requestAnimationFrame(()=>document.documentElement.classList.add("gl-ready"));return}const n="attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}",E=`
+(function(){const p=document.getElementById("gl"),f={sf:1,heart:1,fill:0,burst:0,cam:0,par:0,tint:0,streak:0,beat:0,hy:0,hs:1,mx:0,my:0,mo:0,zm:0,lk:0,lp:0,pary:0,rx:0,ry:0,rp:1,fw:0,sy:0,lv:3},c=Object.assign({},f),B=matchMedia("(prefers-reduced-motion: reduce)").matches,r={ok:!1,rm:B,set(n){Object.assign(c,n)},jump(n){Object.assign(c,n),Object.assign(f,n)},state:f,target:c};window.GL=r;const ae=(navigator.hardwareConcurrency||4)<=4||(navigator.deviceMemory||4)<=3,R=[{s:.42,q:.5},{s:.55,q:.65},{s:.7,q:.8},{s:.85,q:1},{s:1,q:1}],P=/lv=([0-4])/.exec(location.hash);let l=P?+P[1]:ae?2:3,A=R[l].s,z=R[l].q,L=!1,h=0,d=0,u=1,x=1;f.lv=c.lv=l,document.documentElement.classList.toggle("lq",l<2);function b(){u=Math.max(1,Math.round(h*A)),x=Math.max(1,Math.round(d*A)),t&&t.viewport(0,0,u,x),p.style.transform=u<h||x<d?`scale(${(h/u).toFixed(5)},${(d/x).toFixed(5)})`:"",L=!1}function G(){const n=Math.min(window.devicePixelRatio||1,2);let q=innerWidth*n,s=innerHeight*n;const g=Math.min(1,1400/Math.max(q,s));h=Math.round(q*g),d=Math.round(s*g),(p.width!==h||p.height!==d)&&(p.width=h,p.height=d),b()}let t;const S=!!window.WebGLRenderingContext&&!/nogl/.test(location.hash);r.ok=S,S?document.documentElement.classList.add("gl"):document.documentElement.classList.add("no-gl"),S&&requestAnimationFrame(()=>setTimeout(oe,0));function oe(){G();try{t=p.getContext("webgl",{antialias:!1,alpha:!1,powerPreference:"high-performance",preserveDrawingBuffer:!1})}catch{}if(!t){r.ok=!1,document.documentElement.classList.remove("gl"),document.documentElement.classList.add("no-gl"),requestAnimationFrame(()=>document.documentElement.classList.add("gl-ready"));return}const n="attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}",q=`
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
 precision mediump float;
 #endif
-uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw,sy,lv;
+uniform vec2 R; uniform float t,q,sf,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw,sy,lv;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
@@ -78,16 +78,8 @@ vec3 world(vec2 uv,float asp){
       }
       col=mc;
     }
-    // туман
-    float fy=HZ+.05+fi*.035;
-    float fog=exp(-abs(uv.y-fy)*(14.+fi*4.))*(.5+.5*n1(x*2.5+t*.06+fi*5.));
-    col+=vec3(.42,.22,.22)*fog*(.16-fi*.03);
   }
-  // плотный дрейфующий туман у воды: два слоя с параллаксом — глубина
-  if(lv>1. && abs(uv.y-HZ-.02)<.22){
-    float fb=n2(vec2(w*3.+t*.05+par*.04,uv.y*9.))*.6;
-    fb+=(lv>2.5?n2(vec2(w*7.-t*.08+par*.09,uv.y*16.+3.)):.5)*.4;
-    col+=vec3(.36,.2,.22)*smoothstep(.45,.85,fb)*exp(-abs(uv.y-HZ-.02)*16.)*.22*clamp(lv-1.,0.,1.); }
+  // v16: туман и дымка над водой убраны — без пелены, чёткие слои гор
   // огни набережной
   if(abs(uv.y-HZ-.006)<.02){ col+=vec3(1.,.7,.4)*lightsRow(w)*smoothstep(.006,0.,abs(uv.y-HZ-.006))*1.2; }
   // море
@@ -132,16 +124,34 @@ float sdHeart(vec2 p){
   if(p.y+p.x>1.0) return sqrt(dot2(p-vec2(0.25,0.75)))-0.35355;
   return sqrt(min(dot2(p-vec2(0.0,1.0)),dot2(p-0.5*max(p.x+p.y,0.0))))*sign(p.x-p.y);
 }
+// ---------- снежинка (v16): 6 лучей с веточками, гранёный «призматический» профиль ----------
+float sdFlake(vec2 p){
+  float r=length(p); if(r>.95) return r-.89; // далеко от лучей — дешёвая оценка
+  // свёртка в сектор 0–30° отражениями (без atan): луч вдоль x, соседние лучи — зеркала
+  p=abs(p); p-=2.*min(dot(p,vec2(.866,-.5)),0.)*vec2(.866,-.5); p-=2.*min(dot(p,vec2(.5,-.866)),0.)*vec2(.5,-.866);
+  const vec2 D=vec2(.5,.866);
+  float d=length(vec2(p.x-clamp(p.x,0.,.86),p.y))-.052+.03*smoothstep(.2,.86,p.x);
+  vec2 a=p-vec2(.30,0.); d=min(d,length(a-D*clamp(dot(a,D),0.,.27))-.036);
+  a=p-vec2(.55,0.); d=min(d,length(a-D*clamp(dot(a,D),0.,.21))-.031);
+  a=p-vec2(.74,0.); d=min(d,length(a-D*clamp(dot(a,D),0.,.11))-.025);
+  return min(d,max(p.x*.866+p.y*.5,p.y)-.17); // шестиугольная пластинка в центре
+}
+float shp2(vec2 p){ // форма: снежинка (sf=1) или сердце (sf=0); в переходе — перетекание
+  if(sf>.995) return sdFlake(p*1.42)/1.42;
+  if(sf<.005) return sdHeart(p*1.25+vec2(0.,.62))/1.25;
+  return mix(sdHeart(p*1.25+vec2(0.,.62))/1.25,sdFlake(p*1.42)/1.42,sf);
+}
 float pulse(){float b=fract(t*(.85+fill*.6));return (exp(-b*9.)*.6+exp(-max(b-.18,0.)*9.)*.4*step(.18,b))*(.3+fill*.7);}
-vec3 hp(vec3 p){p.xz*=rot(sin(t*.45)*.55+burst*2.);p.yz*=rot(.12*sin(t*.33));return p;}
+mat2 RA,RB,RC; // повороты фигуры считаются один раз на пиксель, а не на каждом шаге луча
+vec3 hp(vec3 p){p.xy*=RA;p.xz*=RB;p.yz*=RC;return p;}
 float mapH(vec3 p){
   float sc=hs*(1.+.035*pulse()+.05*beat+burst*.25);
   p/=sc; p=hp(p);
-  vec2 qv=p.xy*1.25+vec2(0.,.62);
-  float d2=sdHeart(qv)/1.25;
-  float th=.30*sqrt(clamp(-d2*3.2,0.,1.))+.035;
+  float d2=shp2(p.xy);
+  // профиль толщины: у сердца — «надутый», у снежинки — гранёный хребет вдоль лучей (свет ломается на гранях)
+  float th=mix(.30*sqrt(clamp(-d2*3.2,0.,1.))+.035,.018+clamp(-d2,0.,.2)*.95,sf);
   float dz=abs(p.z)-th;
-  return (length(max(vec2(d2,dz),0.))+min(max(d2,dz),0.)-.03)*.7*sc;
+  return (length(max(vec2(d2,dz),0.))+min(max(d2,dz),0.)-mix(.03,.006,sf))*.7*sc;
 }
 vec3 nH(vec3 p){vec2 e=vec2(.0015,-.0015);return normalize(e.xyy*mapH(p+e.xyy)+e.yyx*mapH(p+e.yyx)+e.yxy*mapH(p+e.yxy)+e.xxx*mapH(p+e.xxx));}
 
@@ -157,14 +167,18 @@ void main(){
   vec3 ro=vec3(0.,0.,3.2);
   // ---------- сердце ----------
   if(heart>.01){
+    RA=rot(t*.08*sf); RB=rot(sin(t*.45)*.55+burst*2.); RC=rot(.12*sin(t*.33));
     vec2 hu=uv-vec2(0.,hy);
     vec3 rd=normalize(vec3(hu,-2.1));
-    float d2s=sdHeart((hu/hs)*1.52*1.25+vec2(0.,.62))/1.25;
+    // силуэт фигуры на экране (для снежинки — с учётом её поворота): по нему ореол и отсечение лучей мимо фигуры
+    vec2 q2=(hu/hs)*1.52; if(sf>.5) q2*=RA;
+    float d2s=shp2(q2);
     float halo=exp(-max(d2s,0.)*(6.-3.*fill))*(.10+.5*fill+.25*beat)*(1.-burst);
     col+=vec3(1.,.30,.28)*halo*heart*.5;
     float tt=0.,hit=0.; vec3 p;
     float b=dot(ro,rd),c=dot(ro,ro)-1.5*hs*hs,h=b*b-c;
-    if(h>0.){
+    // плоская снежинка при любом повороте остаётся внутри своего силуэта: лучи далеко от него не трассируем
+    if(h>0. && (sf<.5 || burst>.01 || d2s<.12)){
       tt=max(-b-sqrt(h),0.);
       for(int i=0;i<64;i++){
         if(float(i)>64.*q) break;
@@ -181,7 +195,7 @@ void main(){
       float keep=step(burst*1.05,hn);
       float edge=smoothstep(.08,0.,hn-burst*1.05)*step(.001,burst);
       float fr=pow(1.-max(dot(n,v),0.),2.2);
-      vec3 refr=world(uv+n.xy*.16*(1.-fr),asp)*vec3(1.,.9,.95)*1.15;
+      vec3 refr=world(uv+n.xy*mix(.16,.27,sf)*(1.-fr),asp)*mix(vec3(1.,.9,.95),vec3(.92,1.,1.12),sf)*mix(1.15,1.3,sf);
       vec3 r=reflect(rd,n);
       vec3 env=world(vec2(r.x*.7,r.y*.5-.05),asp)*1.4;
       env+=vec3(1.,.95,.9)*smoothstep(.55,.9,r.y)*smoothstep(.6,.1,abs(r.x))*1.3;
@@ -197,6 +211,7 @@ void main(){
       hc+=env*fr*mix(vec3(1.),irid,.8)*.9;
       hc+=irid*fr*.18;
       hc+=vec3(1.)*sp*1.6;
+      hc+=vec3(.95,.97,1.)*pow(fr,3.)*sf*.55; // ледяная кромка: грани снежинки ловят свет
       hc+=vec3(1.,.8,.6)*smoothstep(.03,0.,abs(py-lvl))*step(.01,fill)*step(fill,.99)*.7;
       hc+=vec3(1.,.7,.5)*edge*2.;
       col=mix(col,hc,heart*keep);
@@ -231,4 +246,4 @@ void main(){
   col*=mix(vec3(.93,.95,1.07),vec3(1.05,1.,.93),smoothstep(.02,.5,lum)); // холодные тени, тёплые света
   col=1.-exp(-col*1.7);
   gl_FragColor=vec4(pow(col,vec3(.96)),1.);
-}`,i=document.documentElement;let g=/Apple/.test(navigator.vendor||"")?null:t.getExtension("KHR_parallel_shader_compile");function W(e,o){const a=t.createShader(e);return t.shaderSource(a,o),t.compileShader(a),a}let D,k,v,w=!1;r.ok=!0,i.classList.add("gl");function re(){k&&!t.getShaderParameter(k,t.COMPILE_STATUS)&&console.warn(t.getShaderInfoLog(k)),r.ok=!1,i.classList.remove("gl"),i.classList.add("no-gl"),requestAnimationFrame(()=>i.classList.add("gl-ready"))}const H={};function _(){if(w)return;if(!t.getProgramParameter(v,t.LINK_STATUS))return re();t.useProgram(v);const e=t.createBuffer();t.bindBuffer(t.ARRAY_BUFFER,e),t.bufferData(t.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),t.STATIC_DRAW);const o=t.getAttribLocation(v,"p");t.enableVertexAttribArray(o),t.vertexAttribPointer(o,2,t.FLOAT,!1,0,0),["R","t","q",...Object.keys(f)].forEach(a=>H[a]=t.getUniformLocation(v,a)),b(),Q=!0,m||(m=!0,y=performance.now(),requestAnimationFrame(j))}function B(){if(D=W(t.VERTEX_SHADER,n),k=W(t.FRAGMENT_SHADER,E),v=t.createProgram(),t.attachShader(v,D),t.attachShader(v,k),t.linkProgram(v),g){const e=()=>{if(w)return;const o=t.getProgramParameter(v,g.COMPLETION_STATUS_KHR);typeof o!="boolean"?(g=null,_()):o?_():requestAnimationFrame(e)};requestAnimationFrame(e)}else requestAnimationFrame(()=>setTimeout(_,0))}B(),p.addEventListener("webglcontextlost",e=>{e.preventDefault(),w=!0,m=!1,r.ok=!1,i.classList.remove("gl"),i.classList.add("no-gl")},!1),p.addEventListener("webglcontextrestored",()=>{w=!1,r.ok=!0,i.classList.remove("no-gl"),i.classList.add("gl"),b(),B()},!1);function K(e,o){e=Math.max(0,Math.min(4,e)),e!==c&&(c=e,l.lv=e,document.documentElement.classList.toggle("lq",e<2),A=L[e].s,z=L[e].q,q=!0,o&&b())}r.pulse=()=>{q&&b()};let R=60;const s=[];r.quality=()=>({level:c,fps:Math.round(R),scale:+A.toFixed(2),q:z,w:d,h:x,pending:q}),Object.defineProperty(r,"level",{get:()=>c}),addEventListener("resize",U),addEventListener("pointermove",e=>{l.par=(e.clientX/innerWidth-.5)*2},{passive:!0}),addEventListener("pointermove",e=>{l.pary=(e.clientY/innerHeight-.5)*2},{passive:!0}),addEventListener("deviceorientation",e=>{e.gamma!=null&&(l.par=Math.max(-1,Math.min(1,e.gamma/30))),e.beta!=null&&(l.pary=Math.max(-1,Math.min(1,(e.beta-45)/35)))},{passive:!0});let T=0,y=0,V=0;const le={streak:9,burst:2.2,zm:3.2,lk:6,fw:1.6,lv:1.2};function j(e){if(w){m=!1;return}T||(T=y=e);const o=Math.min(.05,(e-y)/1e3);y=e,V+=o*(N?.25:1);for(const a in l)f[a]+=(l[a]-f[a])*Math.min(1,o*(le[a]||2.6));t.uniform2f(H.R,d,x),t.uniform1f(H.t,V),t.uniform1f(H.q,z);for(const a in f)t.uniform1f(H[a],f[a]);t.drawArrays(t.TRIANGLES,0,3),r.ready||(r.ready=!0,requestAnimationFrame(()=>document.documentElement.classList.add("gl-ready"))),ce(e),document.hidden?m=!1:requestAnimationFrame(j)}let M=0,I=0,F=0,Y=0,X=-1e9,O=1e4,$=0,J=0;function ce(e){const o=e-J;if(J=e,P||(I||(I=e+700),e<I)||e<$||o<=0||o>4e3)return;if(s.push(o),s.length>90&&s.shift(),!M){M=e+1e3,s.length=0;return}if(e<M||s.length<4)return;const a=e-T<3200;M=e+(a?1e3:2e3);const ee=s.slice().sort((C,G)=>C-G),te=ee[ee.length>>1];R=1e3/(s.reduce((C,G)=>C+G,0)/s.length);const Z=Math.min(R,1e3/te);Z<(a?50:46)?(K(a?c-1:Z<15?0:c-(Z<30?2:1),Z<35),e-X<15e3&&(O=Math.min(O*2,8e4)),Y=e,F=0,s.length=0):1e3/te>=56&&R>=50&&e-Y>O?++F>=3&&(K(c+1,!1),X=e,F=0,s.length=0):F=0}let m=!1,Q=!1;document.addEventListener("visibilitychange",()=>{Q&&!document.hidden&&!m&&(m=!0,y=performance.now(),$=y+600,s.length=0,requestAnimationFrame(j))}),r.uv=(e,o)=>{const a=Math.min(innerWidth,innerHeight);return[(e-innerWidth/2)/a,(innerHeight/2-o)/a]}}})();
+}`,s=document.documentElement;let g=/Apple/.test(navigator.vendor||"")?null:t.getExtension("KHR_parallel_shader_compile");function N(e,o){const a=t.createShader(e);return t.shaderSource(a,o),t.compileShader(a),a}let U,k,v,w=!1;r.ok=!0,s.classList.add("gl");function re(){k&&!t.getShaderParameter(k,t.COMPILE_STATUS)&&console.warn(t.getShaderInfoLog(k)),r.ok=!1,s.classList.remove("gl"),s.classList.add("no-gl"),requestAnimationFrame(()=>s.classList.add("gl-ready"))}const H={};function _(){if(w)return;if(!t.getProgramParameter(v,t.LINK_STATUS))return re();t.useProgram(v);const e=t.createBuffer();t.bindBuffer(t.ARRAY_BUFFER,e),t.bufferData(t.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),t.STATIC_DRAW);const o=t.getAttribLocation(v,"p");t.enableVertexAttribArray(o),t.vertexAttribPointer(o,2,t.FLOAT,!1,0,0),["R","t","q",...Object.keys(f)].forEach(a=>H[a]=t.getUniformLocation(v,a)),b(),Q=!0,m||(m=!0,y=performance.now(),requestAnimationFrame(D))}function W(){if(U=N(t.VERTEX_SHADER,n),k=N(t.FRAGMENT_SHADER,q),v=t.createProgram(),t.attachShader(v,U),t.attachShader(v,k),t.linkProgram(v),g){const e=()=>{if(w)return;const o=t.getProgramParameter(v,g.COMPLETION_STATUS_KHR);typeof o!="boolean"?(g=null,_()):o?_():requestAnimationFrame(e)};requestAnimationFrame(e)}else requestAnimationFrame(()=>setTimeout(_,0))}W(),p.addEventListener("webglcontextlost",e=>{e.preventDefault(),w=!0,m=!1,r.ok=!1,s.classList.remove("gl"),s.classList.add("no-gl")},!1),p.addEventListener("webglcontextrestored",()=>{w=!1,r.ok=!0,s.classList.remove("no-gl"),s.classList.add("gl"),b(),W()},!1);function K(e,o){e=Math.max(0,Math.min(4,e)),e!==l&&(l=e,c.lv=e,document.documentElement.classList.toggle("lq",e<2),A=R[e].s,z=R[e].q,L=!0,o&&b())}r.pulse=()=>{L&&b()};let E=60;const i=[];r.quality=()=>({level:l,fps:Math.round(E),scale:+A.toFixed(2),q:z,w:u,h:x,pending:L}),Object.defineProperty(r,"level",{get:()=>l}),addEventListener("resize",G),addEventListener("pointermove",e=>{c.par=(e.clientX/innerWidth-.5)*2},{passive:!0}),addEventListener("pointermove",e=>{c.pary=(e.clientY/innerHeight-.5)*2},{passive:!0}),addEventListener("deviceorientation",e=>{e.gamma!=null&&(c.par=Math.max(-1,Math.min(1,e.gamma/30))),e.beta!=null&&(c.pary=Math.max(-1,Math.min(1,(e.beta-45)/35)))},{passive:!0});let T=0,y=0,V=0;const ce={streak:9,burst:2.2,zm:3.2,lk:6,fw:1.6,lv:1.2};function D(e){if(w){m=!1;return}T||(T=y=e);const o=Math.min(.05,(e-y)/1e3);y=e,V+=o*(B?.25:1);for(const a in c)f[a]+=(c[a]-f[a])*Math.min(1,o*(ce[a]||2.6));t.uniform2f(H.R,u,x),t.uniform1f(H.t,V),t.uniform1f(H.q,z);for(const a in f)t.uniform1f(H[a],f[a]);t.drawArrays(t.TRIANGLES,0,3),r.ready||(r.ready=!0,requestAnimationFrame(()=>document.documentElement.classList.add("gl-ready"))),le(e),document.hidden?m=!1:requestAnimationFrame(D)}let F=0,j=0,M=0,Y=0,X=-1e9,C=1e4,$=0,J=0;function le(e){const o=e-J;if(J=e,P||(j||(j=e+700),e<j)||e<$||o<=0||o>4e3)return;if(i.push(o),i.length>90&&i.shift(),!F){F=e+1e3,i.length=0;return}if(e<F||i.length<4)return;const a=e-T<3200;F=e+(a?1e3:2e3);const ee=i.slice().sort((I,O)=>I-O),te=ee[ee.length>>1];E=1e3/(i.reduce((I,O)=>I+O,0)/i.length);const Z=Math.min(E,1e3/te);Z<(a?50:46)?(K(a?l-1:Z<15?0:l-(Z<30?2:1),Z<35),e-X<15e3&&(C=Math.min(C*2,8e4)),Y=e,M=0,i.length=0):1e3/te>=56&&E>=50&&e-Y>C?++M>=3&&(K(l+1,!1),X=e,M=0,i.length=0):M=0}let m=!1,Q=!1;document.addEventListener("visibilitychange",()=>{Q&&!document.hidden&&!m&&(m=!0,y=performance.now(),$=y+600,i.length=0,requestAnimationFrame(D))}),r.uv=(e,o)=>{const a=Math.min(innerWidth,innerHeight);return[(e-innerWidth/2)/a,(innerHeight/2-o)/a]}}})();
