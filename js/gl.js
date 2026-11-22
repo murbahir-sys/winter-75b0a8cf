@@ -2,7 +2,7 @@
    стеклянное переливающееся сердце. Один шейдер, без библиотек. */
 (function () {
   const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0 };
+  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0, rx: 0, ry: 0, rp: 1, fw: 0 };
   const T = Object.assign({}, S);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
@@ -14,13 +14,34 @@
   const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   const fs = `
 precision highp float;
-uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary;
+uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 float n1(float x){float i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(h11(i),h11(i+1.),f);}
 float ridge(float x,float s){float a=0.,m=.55,f=1.;for(int i=0;i<5;i++){float v=n1(x*f+s*17.3);a+=m*(i<2?1.-abs(2.*v-1.):v);f*=2.07;m*=.48;}return a;}
 float dot2(vec2 v){return dot(v,v);}
+float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h21(i),h21(i+vec2(1.,0.)),f.x),mix(h21(i+vec2(0.,1.)),h21(i+1.),f.x),f.y);}
+// салют над бухтой (только на финале)
+vec3 fireworks(vec2 uv,float asp){
+  vec3 c=vec3(0.);
+  for(int k=0;k<3;k++){
+    float fk=float(k), P=3.4+fk*.7, tk=t+fk*1.37, id=floor(tk/P), ph=fract(tk/P);
+    vec2 ce=vec2((h11(id*3.1+fk*7.)-.5)*1.4*min(asp,1.4),.3+.42*h11(id*5.7+fk));
+    vec3 hue=mix(vec3(1.,.45,.3),mix(vec3(1.,.82,.55),vec3(1.,.3,.45),h11(id+fk*3.)),h11(id*9.1+fk));
+    float e=pow(1.-ph,1.6)*1.5, r=.24*(1.-pow(1.-min(ph*1.4,1.),3.));
+    // взлёт: короткий след снизу вверх
+    if(ph<.05){ float ly=mix(-.2,ce.y,ph/.05); c+=hue*exp(-length((uv-vec2(ce.x,ly))*vec2(1.,.35))*120.)*.8; continue; }
+    float dc=length(uv-ce); if(dc>r+.06) { c+=hue*exp(-dc*9.)*e*e*.02; continue; }
+    // только ближайшие 3 искры по углу вместо перебора всех 20
+    vec2 rv=uv-ce+vec2(0.,ph*ph*.06); float ai=floor(atan(rv.y,rv.x)/6.2832*20.+.5);
+    for(int j=-1;j<=1;j++){ float fi=mod(ai+float(j)+20.,20.);
+      float a=fi/20.*6.2832+(h11(fi+id)-.5)*.12; vec2 pp=ce+vec2(cos(a),sin(a))*r*(.85+.15*h11(fi*3.+id))-vec2(0.,ph*ph*.06);
+      float d=length(uv-pp); c+=hue*(.00006/(d*d+.00004))*e*(.6+.4*sin(t*30.+fi)); }
+    c+=hue*exp(-dc*9.)*e*e*.035;
+  }
+  return c;
+}
 mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
 
@@ -71,6 +92,10 @@ vec3 world(vec2 uv,float asp){
     float fog=exp(-abs(uv.y-fy)*(14.+fi*4.))*(.5+.5*n1(x*2.5+t*.06+fi*5.));
     col+=vec3(.42,.22,.22)*fog*(.16-fi*.03);
   }
+  // плотный дрейфующий туман у воды: два слоя с параллаксом — глубина
+  if(abs(uv.y-HZ-.02)<.22){
+    float fb=n2(vec2(w*3.+t*.05+par*.04,uv.y*9.))*.6+n2(vec2(w*7.-t*.08+par*.09,uv.y*16.+3.))*.4;
+    col+=vec3(.36,.2,.22)*smoothstep(.45,.85,fb)*exp(-abs(uv.y-HZ-.02)*16.)*.22; }
   // огни набережной
   if(abs(uv.y-HZ-.006)<.02){ col+=vec3(1.,.7,.4)*lightsRow(w)*smoothstep(.006,0.,abs(uv.y-HZ-.006))*1.2; }
   // море
@@ -85,8 +110,10 @@ vec3 world(vec2 uv,float asp){
     sea+=vec3(1.,.85,.7)*exp(-abs(uv.x-mp.x)*18.)*exp(-dy*3.)*rip*.35;
     float gl1=step(.986,h21(floor(vec2((uv.x-mp.x)*240.,dy*520./(dy*6.+.3)))+floor(t*5.)));
     sea+=vec3(1.,.9,.78)*gl1*exp(-abs(uv.x-mp.x)*(9.+dy*30.))*exp(-dy*4.)*.55; // блёстки на лунной дорожке
+    if(fw>.01) sea+=fireworks(vec2(uv.x+(rip-.5)*.02,2.*HZ-uv.y),asp)*fw*exp(-dy*3.)*.35;
     col=sea;
   }
+  if(fw>.01 && uv.y>HZ) col+=fireworks(uv,asp)*fw*smoothstep(HZ,HZ+.08,uv.y);
   return col;
 }
 vec3 snowFx(vec2 uv){
@@ -129,6 +156,10 @@ void main(){
   vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);
   float asp=R.x/R.y;
   vec2 uv0=uv; uv=uv/(1.+zm*.06)+vec2(0.,pary*.012);
+  // волна-преломление от точки касания при переходе
+  float ring=0.;
+  if(rp<.999){ vec2 rv=uv0-vec2(rx,ry); float rd0=length(rv); ring=exp(-pow((rd0-rp*1.9)*9.,2.))*(1.-rp)*(1.-rp);
+    uv+=rv/(rd0+.001)*ring*.06; }
   vec3 col=world(uv,asp);
   vec3 ro=vec3(0.,0.,3.2);
   // ---------- сердце ----------
@@ -193,6 +224,7 @@ void main(){
     }
   }
   col+=snowFx(uv);
+  col+=vec3(1.,.75,.6)*ring*.12;
   // анаморфный блик
   col+=vec3(1.,.55,.45)*exp(-abs(uv.y-hy)*40.)*streak*1.3+vec3(1.,.8,.7)*streak*.18;
   // световая засветка при переходах (light leak)
@@ -232,7 +264,7 @@ void main(){
   addEventListener('deviceorientation', e => { if (e.gamma != null) T.par = Math.max(-1, Math.min(1, e.gamma / 30)); if (e.beta != null) T.pary = Math.max(-1, Math.min(1, (e.beta - 45) / 35)); }, { passive: true });
 
   const t0 = performance.now(); let last = t0, frames = 0, acc = 0, tt = 0;
-  const fast = { streak: 9, burst: 2.2, zm: 3.2, lk: 6 };
+  const fast = { streak: 9, burst: 2.2, zm: 3.2, lk: 6, fw: 1.6 };
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; tt += dt * (RM ? 0.25 : 1);
     for (const k in T) S[k] += (T[k] - S[k]) * Math.min(1, dt * (fast[k] || 2.6));
@@ -243,7 +275,10 @@ void main(){
     if (acc > 1.5) { const fps = frames / acc;
       if (fps < 42 && scale > 0.4) { scale = Math.max(0.4, scale - 0.12); if (scale < 0.55) q = Math.max(0.5, q - 0.1); size(); }
       frames = 0; acc = 0; }
-    if (!document.hidden) requestAnimationFrame(loop); else setTimeout(() => requestAnimationFrame(loop), 500);
+    if (!document.hidden) requestAnimationFrame(loop); else running = false;
   }
-  requestAnimationFrame(loop);
+  let running = true; requestAnimationFrame(loop);
+  // вне вкладки — полная пауза, при возврате продолжаем без скачка времени
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !running) { running = true; last = performance.now(); requestAnimationFrame(loop); } });
+  api.uv = (x, y) => { const m = Math.min(innerWidth, innerHeight); return [(x - innerWidth / 2) / m, (innerHeight / 2 - y) / m]; };
 })();

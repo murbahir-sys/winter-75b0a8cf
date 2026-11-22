@@ -75,6 +75,33 @@
     const t = el.textContent; if (!t.trim()) return; el.setAttribute('aria-label', t);
     el.innerHTML = t.split(' ').map(w => `<span class="split-wd" aria-hidden="true">${esc(w)}</span>`).join(' '); });
 
+  // салют для режима без WebGL: кольцо тёплых огоньков в небе
+  let fwTimer = 0;
+  function fwFallback() { if (document.hidden) return; const cx = innerWidth * (.2 + Math.random() * .6), cy = innerHeight * (.1 + Math.random() * .18);
+    for (let i = 0; i < 22; i++) { const a = i / 22 * 6.283, v = 1.6 + Math.random() * .5; parts.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 0, vr: 0, s: 14 + Math.random() * 8, life: 1, k: 3 }); }
+    if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); } }
+  // последняя точка касания — центр волны перехода
+  let lastPt = [innerWidth / 2, innerHeight * 0.7];
+  document.addEventListener('pointerdown', e => { lastPt = [e.clientX, e.clientY]; }, { passive: true, capture: true });
+  // световой след за пальцем/курсором (тёплая пыль)
+  const glow = document.createElement('canvas'); glow.width = glow.height = 32;
+  (g => { const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,225,200,1)'); gr.addColorStop(.35, 'rgba(255,170,130,.45)'); gr.addColorStop(1, 'rgba(255,120,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); })(glow.getContext('2d'));
+  let trailT = 0, touching = false;
+  addEventListener('pointerdown', e => { touching = true; }, { passive: true });
+  addEventListener('pointerup', () => { touching = false; }, { passive: true }); addEventListener('pointercancel', () => { touching = false; }, { passive: true });
+  addEventListener('pointermove', e => { if (RM || (e.pointerType !== 'mouse' && !touching)) return; if (e.target.closest && e.target.closest('input,textarea')) return;
+    const now = performance.now(); if (now - trailT < 24) return; trailT = now;
+    if (parts.filter(p => p.k === 3).length > 40) return;
+    for (let i = 0; i < 2; i++) parts.push({ x: e.clientX + (Math.random() - .5) * 8, y: e.clientY + (Math.random() - .5) * 8, vx: (Math.random() - .5) * .6, vy: -.2 - Math.random() * .5, r: 0, vr: 0, s: 10 + Math.random() * 16, life: .9, k: 3 });
+    if (!fxOn) { fxOn = true; requestAnimationFrame(fxLoop); } }, { passive: true });
+  // микроанимация выбора: карточки, чипы, дни — мягкий «отклик»
+  document.addEventListener('click', e => { if (RM) return; const el = e.target.closest('.chip, .day.ok, .mood, .city, .act'); if (!el) return;
+    const key = '.' + el.classList[0] + Object.entries(el.dataset).map(([k, v]) => `[data-${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}="${CSS.escape(v)}"]`).join('');
+    requestAnimationFrame(() => { const n = el.isConnected ? el : $(key); if (!n || !n.animate) return;
+      const on = n.classList.contains('on');
+      n.animate(on ? [{ transform: 'scale(1)' }, { transform: 'scale(.95)', offset: .3 }, { transform: 'scale(1.025)', offset: .7 }, { transform: 'scale(1)' }] : [{ transform: 'scale(1)' }, { transform: 'scale(.97)', offset: .4 }, { transform: 'scale(1)' }], { duration: on ? 480 : 300, easing: 'cubic-bezier(.3,.7,.3,1)' });
+      if (on) { const ck = n.querySelector('.ck'); if (ck && ck.animate) ck.animate([{ boxShadow: '0 0 0 0 rgba(227,38,76,.6)' }, { boxShadow: '0 0 0 12px rgba(227,38,76,0)' }], { duration: 650, easing: 'ease-out' }); } }); });
+
   // рябь касания на кнопках + «магнит» для мыши
   document.addEventListener('pointerdown', e => { if (RM) return; const b = e.target.closest('.btn, .pl-want, .chip'); if (!b || b.disabled) return;
     const r = b.getBoundingClientRect(), sp = document.createElement('span'); sp.className = 'rip';
@@ -105,7 +132,8 @@
   function fxLoop() {
     fc.clearRect(0, 0, innerWidth, innerHeight);
     parts = parts.filter(p => p.life > 0);
-    for (const p of parts) { p.vy += .12; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life -= .012;
+    for (const p of parts) { if (p.k === 3) { p.vx *= .965; p.vy = p.vy * .965 + .015; p.x += p.vx; p.y += p.vy; p.life -= .022; fc.globalCompositeOperation = 'lighter'; fc.globalAlpha = Math.max(0, p.life) * .55; fc.drawImage(glow, p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); fc.globalCompositeOperation = 'source-over'; continue; }
+      p.vy += .12; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life -= .012;
       fc.save(); fc.translate(p.x, p.y); fc.rotate(p.r); fc.globalAlpha = Math.max(0, p.life); fc.fillStyle = p.c;
       if (p.k === 0) { heartPath(p.s); fc.fill(); } else if (p.k === 1) { fc.beginPath(); fc.ellipse(0, 0, p.s * .22, p.s * .55, 0, 0, 6.29); fc.fill(); } else { fc.beginPath(); fc.arc(0, 0, p.s * .14, 0, 6.29); fc.fill(); }
       fc.restore(); }
@@ -137,6 +165,10 @@
   // кинематографичный переход: уход с глубиной и смазом, вход — мягкой маской-шторкой, засветка и «наезд» камеры в сцене
   function cine(from, to, dir, done) {
     const sw = { p: dir > 0 ? -1 : 1 };
+    // волна-преломление по сцене из точки последнего касания
+    if (GL.ok && GL.uv) { const [rx, ry] = GL.uv(lastPt[0], lastPt[1]), rw = { p: 0 }; GL.jump({ rx, ry, rp: 0 });
+      G.to(rw, { p: 1, duration: 1.5, ease: 'power1.out', onUpdate: () => GL.jump({ rp: rw.p }) }); }
+    else { const r = $('.tapring'); r.style.left = lastPt[0] + 'px'; r.style.top = lastPt[1] + 'px'; r.classList.remove('go'); void r.offsetWidth; r.classList.add('go'); }
     GL.set({ zm: 1, lk: 1 }); setTimeout(() => GL.set({ zm: 0 }), 380); setTimeout(() => GL.set({ lk: 0 }), 650);
     G.to(sw, { p: dir > 0 ? 1 : -1, duration: 1.1, ease: 'power2.inOut', onUpdate: () => GL.jump({ lp: sw.p }) });
     if (!GL.ok) document.documentElement.style.setProperty('--lk', dir), $('.leak').classList.remove('go'), void $('.leak').offsetWidth, $('.leak').classList.add('go');
@@ -158,7 +190,8 @@
       fitTitles(to); placeEmblem(to); animIn(to, dir); busy = false;
     };
     const dir = ORDER.indexOf(name) >= ORDER.indexOf(cur) || name === 'later' ? 1 : -1;
-    GL.set(GLS[name]);
+    GL.set(GLS[name]); GL.set({ fw: name === 'final' && !RM ? 1 : 0 });
+    clearInterval(fwTimer); if (name === 'final' && !GL.ok && !RM) fwTimer = setInterval(fwFallback, 3600);
     if (opt.instant || !G || RM) { swap(); return; }
     busy = true;
     if (dir > 0) streak();

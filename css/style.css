@@ -363,3 +363,20 @@ input[type=text]::placeholder{color:rgba(247,236,231,.42)}
 @media (prefers-reduced-motion:reduce){.btn-primary::before,.leak,.ticket.printing::after{animation:none;display:none}.btn .rip{display:none}.dgv.in,.dgv.out{animation:none}}
 html:not(.no-gl) .vig{opacity:.55}
 .btn-primary{transition:transform .25s var(--ease),translate .35s var(--ease),background-color .3s,box-shadow .3s}
+
+/* ===== v12: волна, хроматичные кнопки, стекло, поля, отклик выбора ===== */
+.tapring{position:fixed;z-index:4;left:50%;top:70%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;pointer-events:none;opacity:0;border:1px solid rgba(255,200,170,.6);box-shadow:0 0 30px rgba(255,150,110,.35),inset 0 0 20px rgba(255,150,110,.25)}
+.tapring.go{animation:tapring 1.2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes tapring{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(70)}}
+@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+.btn-primary::after{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;opacity:.7;
+  background:conic-gradient(from var(--ang),rgba(255,120,150,.9),rgba(255,215,166,.95),rgba(150,210,255,.8),rgba(205,160,255,.85),rgba(255,120,150,.9));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:ang 7s linear infinite}
+@keyframes ang{to{--ang:360deg}}
+.btn-primary:disabled::after,.btn-primary[aria-disabled=true]::after{opacity:.2}
+.btn-quiet,.btn-icon{background-image:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.015));box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(0,0,0,.25)}
+textarea,input[type=text]{transition:border-color .3s,box-shadow .45s var(--ease),background-color .3s}
+textarea:focus,input[type=text]:focus{box-shadow:0 0 0 3px rgba(255,180,143,.1),0 10px 34px -12px rgba(255,120,90,.45);background-color:rgba(247,236,231,.07)}
+.mood.on,.city.on .ck,.chip.on{box-shadow:0 8px 26px -14px rgba(227,38,76,.9)}
+@media (prefers-reduced-motion:reduce){.btn-primary::after{animation:none}.tapring{display:none}}
+body[data-s="final"] .scrim::after{background:linear-gradient(180deg,rgba(9,4,6,.3) 0%,rgba(9,4,6,.38) 26%,rgba(9,4,6,.66) 42%)}
