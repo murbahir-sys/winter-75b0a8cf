@@ -1,18 +1,4 @@
-/* Мир сайта: зимний Крым ночью (горы в тумане, море, огни, снег),
-   стеклянное переливающееся сердце. Один шейдер, без библиотек. */
-(function () {
-  const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0, rx: 0, ry: 0, rp: 1, fw: 0, sy: 0, lv: 3 };
-  const T = Object.assign({}, S);
-  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
-  window.GL = api;
-  let gl;
-  try { gl = cv.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: false }); } catch (e) {}
-  if (!gl) { document.documentElement.classList.add('no-gl'); return; }
-
-  const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
-  const fs = `
+(function(){const p=document.getElementById("gl"),s={heart:1,fill:0,burst:0,cam:0,par:0,tint:0,streak:0,beat:0,hy:0,hs:1,mx:0,my:0,mo:0,zm:0,lk:0,lp:0,pary:0,rx:0,ry:0,rp:1,fw:0,sy:0,lv:3},c=Object.assign({},s),C=matchMedia("(prefers-reduced-motion: reduce)").matches,r={ok:!1,rm:C,set(f){Object.assign(c,f)},jump(f){Object.assign(c,f),Object.assign(s,f)},state:s,target:c};window.GL=r;const Q=(navigator.hardwareConcurrency||4)<=4||(navigator.deviceMemory||4)<=3,b=[{s:.42,q:.5},{s:.55,q:.65},{s:.7,q:.8},{s:.85,q:1},{s:1,q:1}],F=/lv=([0-4])/.exec(location.hash);let l=F?+F[1]:Q?2:3,k=b[l].s,z=b[l].q,w=!1,m=0,h=0,u=1,d=1;s.lv=c.lv=l,document.documentElement.classList.toggle("lq",l<2);function H(){u=Math.max(1,Math.round(m*k)),d=Math.max(1,Math.round(h*k)),t&&t.viewport(0,0,u,d),p.style.transform=u<m||d<h?`scale(${(m/u).toFixed(5)},${(h/d).toFixed(5)})`:"",w=!1}function U(){const f=Math.min(window.devicePixelRatio||1,2);let q=innerWidth*f,v=innerHeight*f;const x=Math.min(1,1400/Math.max(q,v));m=Math.round(q*x),h=Math.round(v*x),(p.width!==m||p.height!==h)&&(p.width=m,p.height=h),H()}let t;const P=!!window.WebGLRenderingContext&&!/nogl/.test(location.hash);r.ok=P,P?document.documentElement.classList.add("gl"):document.documentElement.classList.add("no-gl"),P&&requestAnimationFrame(()=>setTimeout(ee,0));function ee(){U();try{t=p.getContext("webgl",{antialias:!1,alpha:!1,powerPreference:"high-performance",preserveDrawingBuffer:!1})}catch{}if(!t){r.ok=!1,document.documentElement.classList.remove("gl"),document.documentElement.classList.add("no-gl"),requestAnimationFrame(()=>document.documentElement.classList.add("gl-ready"));return}const f="attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}",q=`
 precision highp float;
 uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw,sy,lv;
 #define PI 3.14159265
@@ -241,73 +227,4 @@ void main(){
   col*=mix(vec3(.93,.95,1.07),vec3(1.05,1.,.93),smoothstep(.02,.5,lum)); // холодные тени, тёплые света
   col=1.-exp(-col*1.7);
   gl_FragColor=vec4(pow(col,vec3(.96)),1.);
-}`;
-  function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; } return s; }
-  const v = sh(gl.VERTEX_SHADER, vs), f = sh(gl.FRAGMENT_SHADER, fs);
-  if (!v || !f) { document.documentElement.classList.add('no-gl'); return; }
-  const pr = gl.createProgram(); gl.attachShader(pr, v); gl.attachShader(pr, f); gl.linkProgram(pr);
-  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { document.documentElement.classList.add('no-gl'); return; }
-  gl.useProgram(pr);
-  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-  const U = {}; ['R', 't', 'q', ...Object.keys(S)].forEach(k => U[k] = gl.getUniformLocation(pr, k));
-  api.ok = true; document.documentElement.classList.add('gl');
-
-  // адаптивное качество: 5 уровней, переключение по реальному fps с гистерезисом
-  const weak = (navigator.hardwareConcurrency || 4) <= 4 || (navigator.deviceMemory || 4) <= 3;
-  const LV = [{ s: 0.42, q: 0.5 }, { s: 0.55, q: 0.65 }, { s: 0.7, q: 0.8 }, { s: 0.85, q: 1 }, { s: 1, q: 1 }];
-  const lock = /lv=([0-4])/.exec(location.hash); // отладка: #fps&lv=2 — зафиксировать уровень
-  let level = lock ? +lock[1] : weak ? 2 : 3, scale = LV[level].s, q = LV[level].q, pendingSize = false;
-  S.lv = T.lv = level;
-  function size() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2) * scale;
-    let w = innerWidth * dpr, h = innerHeight * dpr; const k = Math.min(1, 1400 / Math.max(w, h));
-    cv.width = Math.round(w * k); cv.height = Math.round(h * k); gl.viewport(0, 0, cv.width, cv.height); pendingSize = false;
-  }
-  function setLevel(n, urgent) { n = Math.max(0, Math.min(4, n)); if (n === level) return; level = n; T.lv = n; // эффекты гаснут плавно через uniform lv
-    scale = LV[n].s; q = LV[n].q; pendingSize = true; if (urgent) size(); } // разрешение меняем в момент перехода экранов — глазу не видно
-  api.pulse = () => { if (pendingSize) size(); };
-  let fpsNow = 60; const ft = [];
-  api.quality = () => ({ level, fps: Math.round(fpsNow), scale: +scale.toFixed(2), q, w: cv.width, h: cv.height, pending: pendingSize });
-  Object.defineProperty(api, 'level', { get: () => level });
-  addEventListener('resize', size); size();
-  // параллакс от пальца/мыши и наклона
-  addEventListener('pointermove', e => { T.par = (e.clientX / innerWidth - .5) * 2; }, { passive: true });
-  addEventListener('pointermove', e => { T.pary = (e.clientY / innerHeight - .5) * 2; }, { passive: true });
-  addEventListener('deviceorientation', e => { if (e.gamma != null) T.par = Math.max(-1, Math.min(1, e.gamma / 30)); if (e.beta != null) T.pary = Math.max(-1, Math.min(1, (e.beta - 45) / 35)); }, { passive: true });
-
-  const t0 = performance.now(); let last = t0, frames = 0, acc = 0, tt = 0;
-  const fast = { streak: 9, burst: 2.2, zm: 3.2, lk: 6, fw: 1.6, lv: 1.2 };
-  function loop(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now; tt += dt * (RM ? 0.25 : 1);
-    for (const k in T) S[k] += (T[k] - S[k]) * Math.min(1, dt * (fast[k] || 2.6));
-    gl.uniform2f(U.R, cv.width, cv.height); gl.uniform1f(U.t, tt); gl.uniform1f(U.q, q);
-    for (const k in S) gl.uniform1f(U[k], S[k]);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    if (!api.ready) { api.ready = true; requestAnimationFrame(() => document.documentElement.classList.add('gl-ready')); }
-    adapt(now);
-    if (!document.hidden) requestAnimationFrame(loop); else running = false;
-  }
-  // замер: первые ~3 с калибровка (раз в 1 с), дальше раз в 2 с; вверх — только после 6 с стабильно высоких кадров
-  let evalAt = 0, warm = 0, good = 0, lastDrop = 0, lastUp = -1e9, upWait = 10000, resumeAt = 0, prevNow = 0;
-  function adapt(now) {
-    const d = now - prevNow; prevNow = now;
-    if (lock) return;
-    if (!warm) warm = now + 700; if (now < warm) return;
-    if (now < resumeAt || d <= 0 || d > 4000) return; ft.push(d); if (ft.length > 90) ft.shift(); // фон/возврат во вкладку отсекает resumeAt
-    if (!evalAt) { evalAt = now + 1000; ft.length = 0; return; } // первые кадры (компиляция, шрифты) не в счёт
-    if (now < evalAt || ft.length < 4) return;
-    const calib = now - t0 < 3200; evalAt = now + (calib ? 1000 : 2000);
-    const sorted = ft.slice().sort((a, b) => a - b), med = sorted[sorted.length >> 1];
-    fpsNow = 1000 / (ft.reduce((a, c) => a + c, 0) / ft.length);
-    const fps = Math.min(fpsNow, 1000 / med);
-    if (fps < (calib ? 50 : 46)) { setLevel(calib ? level - 1 : fps < 15 ? 0 : level - (fps < 30 ? 2 : 1), fps < 35); if (now - lastUp < 15000) upWait = Math.min(upWait * 2, 80000); lastDrop = now; good = 0; ft.length = 0; }
-    else if (1000 / med >= 56 && fpsNow >= 50 && now - lastDrop > upWait) { if (++good >= 3) { setLevel(level + 1, false); lastUp = now; good = 0; ft.length = 0; } }
-    else good = 0;
-  }
-  let running = true; requestAnimationFrame(loop);
-  // вне вкладки — полная пауза, при возврате продолжаем без скачка времени
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && !running) { running = true; last = performance.now(); resumeAt = last + 600; ft.length = 0; requestAnimationFrame(loop); } });
-  api.uv = (x, y) => { const m = Math.min(innerWidth, innerHeight); return [(x - innerWidth / 2) / m, (innerHeight / 2 - y) / m]; };
-})();
+}`,v=document.documentElement,x=t.getExtension("KHR_parallel_shader_compile");function W(e,o){const a=t.createShader(e);return t.shaderSource(a,o),t.compileShader(a),a}const te=W(t.VERTEX_SHADER,f),A=W(t.FRAGMENT_SHADER,q),n=t.createProgram();t.attachShader(n,te),t.attachShader(n,A),t.linkProgram(n),r.ok=!0,v.classList.add("gl");function ae(){A&&!t.getShaderParameter(A,t.COMPILE_STATUS)&&console.warn(t.getShaderInfoLog(A)),r.ok=!1,v.classList.remove("gl"),v.classList.add("no-gl"),requestAnimationFrame(()=>v.classList.add("gl-ready"))}const y={};function B(){if(!t.getProgramParameter(n,t.LINK_STATUS))return ae();t.useProgram(n);const e=t.createBuffer();t.bindBuffer(t.ARRAY_BUFFER,e),t.bufferData(t.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),t.STATIC_DRAW);const o=t.getAttribLocation(n,"p");t.enableVertexAttribArray(o),t.vertexAttribPointer(o,2,t.FLOAT,!1,0,0),["R","t","q",...Object.keys(s)].forEach(a=>y[a]=t.getUniformLocation(n,a)),H(),X=M=!0,requestAnimationFrame(T)}if(x){const e=()=>t.getProgramParameter(n,x.COMPLETION_STATUS_KHR)?B():requestAnimationFrame(e);requestAnimationFrame(e)}else requestAnimationFrame(()=>setTimeout(B,0));function D(e,o){e=Math.max(0,Math.min(4,e)),e!==l&&(l=e,c.lv=e,document.documentElement.classList.toggle("lq",e<2),k=b[e].s,z=b[e].q,w=!0,o&&H())}r.pulse=()=>{w&&H()};let L=60;const i=[];r.quality=()=>({level:l,fps:Math.round(L),scale:+k.toFixed(2),q:z,w:u,h:d,pending:w}),Object.defineProperty(r,"level",{get:()=>l}),addEventListener("resize",U),addEventListener("pointermove",e=>{c.par=(e.clientX/innerWidth-.5)*2},{passive:!0}),addEventListener("pointermove",e=>{c.pary=(e.clientY/innerHeight-.5)*2},{passive:!0}),addEventListener("deviceorientation",e=>{e.gamma!=null&&(c.par=Math.max(-1,Math.min(1,e.gamma/30))),e.beta!=null&&(c.pary=Math.max(-1,Math.min(1,(e.beta-45)/35)))},{passive:!0});let S=0,g=0,G=0;const oe={streak:9,burst:2.2,zm:3.2,lk:6,fw:1.6,lv:1.2};function T(e){S||(S=g=e);const o=Math.min(.05,(e-g)/1e3);g=e,G+=o*(C?.25:1);for(const a in c)s[a]+=(c[a]-s[a])*Math.min(1,o*(oe[a]||2.6));t.uniform2f(y.R,u,d),t.uniform1f(y.t,G),t.uniform1f(y.q,z);for(const a in s)t.uniform1f(y[a],s[a]);t.drawArrays(t.TRIANGLES,0,3),r.ready||(r.ready=!0,requestAnimationFrame(()=>document.documentElement.classList.add("gl-ready"))),ce(e),document.hidden?M=!1:requestAnimationFrame(T)}let R=0,_=0,E=0,N=0,K=-1e9,j=1e4,V=0,Y=0;function ce(e){const o=e-Y;if(Y=e,F||(_||(_=e+700),e<_)||e<V||o<=0||o>4e3)return;if(i.push(o),i.length>90&&i.shift(),!R){R=e+1e3,i.length=0;return}if(e<R||i.length<4)return;const a=e-S<3200;R=e+(a?1e3:2e3);const $=i.slice().sort((O,I)=>O-I),J=$[$.length>>1];L=1e3/(i.reduce((O,I)=>O+I,0)/i.length);const Z=Math.min(L,1e3/J);Z<(a?50:46)?(D(a?l-1:Z<15?0:l-(Z<30?2:1),Z<35),e-K<15e3&&(j=Math.min(j*2,8e4)),N=e,E=0,i.length=0):1e3/J>=56&&L>=50&&e-N>j?++E>=3&&(D(l+1,!1),K=e,E=0,i.length=0):E=0}let M=!1,X=!1;document.addEventListener("visibilitychange",()=>{X&&!document.hidden&&!M&&(M=!0,g=performance.now(),V=g+600,i.length=0,requestAnimationFrame(T))}),r.uv=(e,o)=>{const a=Math.min(innerWidth,innerHeight);return[(e-innerWidth/2)/a,(innerHeight/2-o)/a]}}})();

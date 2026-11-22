@@ -1,2 +1,13 @@
+# Превью ссылок в мессенджерах: им можно забрать страницу и картинку
+User-agent: TelegramBot
+Allow: /
+
+User-agent: vkShare
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Всем остальным — нет (страница личная, noindex)
 User-agent: *
 Disallow: /
