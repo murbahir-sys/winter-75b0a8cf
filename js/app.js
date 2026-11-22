@@ -40,10 +40,35 @@
     });
   }
   fitTitles();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitTitles());
-  let fitT; const refit = () => { clearTimeout(fitT); fitT = setTimeout(() => fitTitles(), 120); };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitTitles(); placeEmblem(); });
+  let fitT; const refit = () => { clearTimeout(fitT); fitT = setTimeout(() => { fitTitles(); placeEmblem(); }, 120); };
   addEventListener('resize', refit); addEventListener('orientationchange', refit); if (window.visualViewport) visualViewport.addEventListener('resize', refit);
   window.__fit = fitTitles;
+
+  // эмблема с маяком: по центру пустого неба между верхней кнопкой и заголовком; луна встаёт над колоннами Херсонеса
+  const MOB = matchMedia('not all and (min-width:761px) and (min-aspect-ratio:23/20)');
+  function placeEmblem(scr) {
+    scr = scr || $('.screen.is-active'); if (!scr) return;
+    const em = $('.emblem', scr);
+    if (!em) { GL.set({ mo: 0 }); return; }
+    if (!MOB.matches) { em.style.top = em.style.width = ''; GL.set({ mo: 0 }); return; }
+    const title = $('h2', scr), mus = $('#music'), W = document.documentElement.clientWidth, H = innerHeight;
+    const top0 = (mus ? mus.getBoundingClientRect().bottom : 52) + 10;
+    const bot0 = title.getBoundingClientRect().top - 18;
+    const room = bot0 - top0;
+    let w = Math.min(270, W * 0.68, room * 320 / 158 * 0.92); // 158 — высота рисунка вместе с луной над ним
+    if (w < 120) { em.style.visibility = 'hidden'; GL.set({ mo: 0 }); return; }
+    em.style.visibility = ''; em.style.width = `${w}px`;
+    const h = w * 150 / 320, k = w / 320, moonUp = 8 * k; // луна чуть выше верхнего края рисунка
+    const t = top0 + (room - h - moonUp) / 2 + moonUp;
+    const pr = em.offsetParent ? em.offsetParent.getBoundingClientRect().top : 0;
+    em.style.top = `${t - pr}px`;
+    // луна: над колоннами (x=128 в координатах рисунка, y=6)
+    const r = em.getBoundingClientRect(), mxp = r.left + (128 - 54) * k, myp = t + 6 * k, m = Math.min(W, H);
+    GL.jump({ mx: (mxp - W / 2) / m, my: (H / 2 - myp) / m }); GL.set({ mo: 1 });
+  }
+  window.__emblem = placeEmblem;
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => { if (cur === 'ask' || cur === 'later') placeEmblem(); }); $$('.ask-text, .s-later').forEach(el => ro.observe(el)); }
 
   // лёгкое зерно
   (function () { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const d = x.createImageData(128, 128);
@@ -99,7 +124,7 @@
       to.classList.add('is-active'); to.scrollTop = 0;
       cur = name; st.screen = name; save(); document.body.dataset.s = name;
       if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'mood') renderMood(); if (name === 'meet') renderMeet();
-      fitTitles(to); animIn(to); busy = false;
+      fitTitles(to); placeEmblem(to); animIn(to); busy = false;
     };
     GL.set(GLS[name]);
     if (opt.instant || !G || RM) { swap(); return; }

@@ -2,7 +2,7 @@
    стеклянное переливающееся сердце. Один шейдер, без библиотек. */
 (function () {
   const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1 };
+  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0 };
   const T = Object.assign({}, S);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
@@ -14,7 +14,7 @@
   const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   const fs = `
 precision highp float;
-uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs;
+uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
@@ -40,7 +40,7 @@ vec3 world(vec2 uv,float asp){
   vec2 sg=floor((uv+vec2(cam*.05,0.))*140.); float sh=h21(sg);
   col+=vec3(1.,.9,.85)*step(.9965,sh)*smoothstep(HZ+.15,.5,uv.y)*(.5+.5*sin(t*2.+sh*40.));
   // луна в дымке
-  vec2 mp=vec2(-.42*asp+cam*.02,.48);
+  vec2 mp=mix(vec2(-.42*asp+cam*.02,.48),vec2(mx,my),mo); // mo: луна встаёт в «небо» эмблемы
   float md=length(uv-mp);
   col+=vec3(1.,.86,.72)*(smoothstep(.042,.038,md)*.8+exp(-md*9.)*.18);
   // горы: 3 слоя, туман между ними

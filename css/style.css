@@ -202,7 +202,7 @@ textarea::placeholder{color:rgba(247,236,231,.42)}
 @media (min-width:761px) and (min-aspect-ratio:23/20){.s-later .emblem{width:min(300px,74vw);margin-left:0}}
 .emblem .ln{stroke-opacity:.9;filter:drop-shadow(0 0 3px rgba(255,180,143,.45))}
 @media not all and (min-width:761px) and (min-aspect-ratio:23/20){
-  .s-ask .emblem,.s-later .emblem{position:absolute;left:0;right:0;top:calc(7vh + var(--st));margin:0 auto;width:min(270px,68vw)}
+  .s-ask .emblem,.s-later .emblem{position:absolute;left:0;right:0;top:calc(12vh + var(--st));margin:0 auto;width:min(270px,68vw)}
 }
 
 /* ================= v5 ================= */
