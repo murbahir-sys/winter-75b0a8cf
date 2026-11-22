@@ -22,6 +22,10 @@
     el.setAttribute('aria-label', el.textContent);
     el.innerHTML = el.textContent.split(' ').map(w => `<span class="split-w" aria-hidden="true">${[...w].map(ch => `<span class="split-c">${esc(ch)}</span>`).join('')}</span>`).join(' ');
   });
+  // блик света, проходящий сквозь буквы (интро и финал)
+  $$('.s-intro h1, .final-title').forEach(el => { el.classList.add('sheen');
+    const o = document.createElement('span'); o.className = 'sheen-l'; o.setAttribute('aria-hidden', 'true');
+    o.innerHTML = el.innerHTML.replace(/split-w/g, 'sw').replace(/split-c/g, 'sc'); el.appendChild(o); });
 
   // заголовки всегда помещаются по ширине: самое длинное слово ≤ 88% доступной ширины (запас на шрифты, масштаб текста Android)
   function fitTitles(root) {
@@ -102,6 +106,17 @@
       n.animate(on ? [{ transform: 'scale(1)' }, { transform: 'scale(.95)', offset: .3 }, { transform: 'scale(1.025)', offset: .7 }, { transform: 'scale(1)' }] : [{ transform: 'scale(1)' }, { transform: 'scale(.97)', offset: .4 }, { transform: 'scale(1)' }], { duration: on ? 480 : 300, easing: 'cubic-bezier(.3,.7,.3,1)' });
       if (on) { const ck = n.querySelector('.ck'); if (ck && ck.animate) ck.animate([{ boxShadow: '0 0 0 0 rgba(227,38,76,.6)' }, { boxShadow: '0 0 0 12px rgba(227,38,76,0)' }], { duration: 650, easing: 'ease-out' }); } }); });
 
+  // параллакс при прокрутке финала: заголовок и счётчик уходят медленнее, сцена чуть «опускает камеру»
+  (function () { const fin = $('[data-screen="final"]'); if (!fin) return; let raf = 0;
+    const layers = () => [[$('.final-title', fin), 0.38, 1], [$('.final-line', fin), 0.3, 1], [$(':scope > p.sub', fin), 0.24, 1], [$('#cd'), 0.16, 0], [$('#ticket'), 0.05, 0]];
+    const apply = () => { raf = 0; const y = fin.scrollTop;
+      if (!RM) layers().forEach(([el, k, fade]) => { if (!el) return; el.style.translate = y > 0 ? `0 ${(y * k).toFixed(1)}px` : ''; if (fade) el.style.opacity = y > 0 ? Math.max(0.15, 1 - y / 420).toFixed(3) : ''; });
+      GL.set({ sy: Math.min(1, y / 700) }); };
+    fin.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(apply); }, { passive: true });
+  })();
+  // тихий «щелчок» на нажатие, только если музыка включена
+  document.addEventListener('pointerdown', e => { if (window.MUSIC && MUSIC.on && MUSIC.tick && e.target.closest('.btn, .chip, .mood, .city, .act, .day.ok, .pl-want, .pl-arr')) MUSIC.tick(); }, { passive: true });
+
   // рябь касания на кнопках + «магнит» для мыши
   document.addEventListener('pointerdown', e => { if (RM) return; const b = e.target.closest('.btn, .pl-want, .chip'); if (!b || b.disabled) return;
     const r = b.getBoundingClientRect(), sp = document.createElement('span'); sp.className = 'rip';
@@ -163,6 +178,29 @@
     if (rest.length) G.fromTo(rest, { y: 22 * dir, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'expo.out', stagger: 0.05, delay: 0.42, clearProps: 'transform' });
   }
   // кинематографичный переход: уход с глубиной и смазом, вход — мягкой маской-шторкой, засветка и «наезд» камеры в сцене
+  // маяк при смене экрана не исчезает: его линии «перетекают» — либо на то же место нового экрана, либо стекают вдоль контура
+  function embGhost(from) {
+    const fe = $('.emblem', from); if (!fe || RM) return null; const r = fe.getBoundingClientRect(); if (!r.width) return null;
+    const g = fe.cloneNode(true); g.classList.add('emb-ghost'); g.removeAttribute('class'); g.setAttribute('class', 'emblem emb-ghost');
+    Object.assign(g.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', margin: 0 });
+    document.body.appendChild(g); fe.style.visibility = 'hidden';
+    $$('.ln', g).forEach(p => { p.removeAttribute('pathLength'); let L = 0; try { L = p.getTotalLength(); } catch (e) {} p._L = L; p.style.strokeDasharray = L ? `${L} ${L}` : 'none'; p.style.strokeDashoffset = '0'; p.style.animation = 'none'; });
+    g._fe = fe; return g;
+  }
+  function embLand(g, to) {
+    const te = $('.emblem', to); g._fe.style.visibility = '';
+    if (te) { // тот же маяк на новом экране: линии плавно переезжают в его позицию, без повторной прорисовки
+      to.classList.add('emb-keep'); $$('.ln', te).forEach(p => { p.style.strokeDasharray = 'none'; });
+      te.style.visibility = 'hidden';
+      requestAnimationFrame(() => { const y0 = +G.getProperty(to, 'y') || 0, r = te.getBoundingClientRect();
+        const gr = g.getBoundingClientRect();
+        G.to(g, { x: r.left - gr.left, y: r.top - y0 - gr.top, scale: r.width / gr.width, transformOrigin: '0 0', duration: 0.9, ease: 'power3.inOut', onComplete: () => { te.style.visibility = ''; g.remove(); } }); });
+    } else { // линии стекают вдоль контура к маяку и гаснут
+      $$('.ln', g).forEach((p, i) => G.to(p, { strokeDashoffset: -(p._L || 0), duration: 0.85, ease: 'power2.inOut', delay: i * 0.06 }));
+      G.to($$('.beam, .lamp, .sea, .refl', g), { opacity: 0, duration: 0.5, ease: 'power1.out' });
+      G.to(g, { opacity: 0, y: -10, duration: 1, ease: 'power2.in', onComplete: () => g.remove() });
+    }
+  }
   function cine(from, to, dir, done) {
     const sw = { p: dir > 0 ? -1 : 1 };
     // волна-преломление по сцене из точки последнего касания
@@ -172,9 +210,10 @@
     GL.set({ zm: 1, lk: 1 }); setTimeout(() => GL.set({ zm: 0 }), 380); setTimeout(() => GL.set({ lk: 0 }), 650);
     G.to(sw, { p: dir > 0 ? 1 : -1, duration: 1.1, ease: 'power2.inOut', onUpdate: () => GL.jump({ lp: sw.p }) });
     if (!GL.ok) document.documentElement.style.setProperty('--lk', dir), $('.leak').classList.remove('go'), void $('.leak').offsetWidth, $('.leak').classList.add('go');
+    const ghost = embGhost(from);
     G.to(from, { opacity: 0, y: -30 * dir, scale: 0.965, filter: 'blur(8px)', duration: 0.48, ease: 'power2.in', onComplete: () => {
       G.set(from, { clearProps: 'all' });
-      done();
+      done(); if (ghost) embLand(ghost, to);
       G.fromTo(to, { y: 26 * dir, scale: 1.015 }, { y: 0, scale: 1, duration: 1.05, ease: 'expo.out', clearProps: 'transform' });
       if (to.animate) to.animate([{ clipPath: dir > 0 ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, easing: 'cubic-bezier(.22,.8,.24,1)' });
     } });
@@ -183,14 +222,14 @@
     if ((name === cur && !opt.force) || busy) return;
     const from = $(`[data-screen="${cur}"]`), to = $(`[data-screen="${name}"]`);
     const swap = () => {
-      from.classList.remove('is-active'); from.style.opacity = ''; from.style.filter = ''; from.style.transform = '';
+      from.classList.remove('is-active', 'emb-keep'); from.style.opacity = ''; from.style.filter = ''; from.style.transform = '';
       to.classList.add('is-active'); to.scrollTop = 0;
       cur = name; st.screen = name; save(); document.body.dataset.s = name;
       if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'mood') renderMood(); if (name === 'meet') renderMeet();
       fitTitles(to); placeEmblem(to); animIn(to, dir); busy = false;
     };
     const dir = ORDER.indexOf(name) >= ORDER.indexOf(cur) || name === 'later' ? 1 : -1;
-    GL.set(GLS[name]); GL.set({ fw: name === 'final' && !RM ? 1 : 0 });
+    GL.set(GLS[name]); GL.set({ fw: name === 'final' && !RM ? 1 : 0, sy: 0 });
     clearInterval(fwTimer); if (name === 'final' && !GL.ok && !RM) fwTimer = setInterval(fwFallback, 3600);
     if (opt.instant || !G || RM) { swap(); return; }
     busy = true;

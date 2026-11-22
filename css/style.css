@@ -380,3 +380,29 @@ textarea:focus,input[type=text]:focus{box-shadow:0 0 0 3px rgba(255,180,143,.1),
 .mood.on,.city.on .ck,.chip.on{box-shadow:0 8px 26px -14px rgba(227,38,76,.9)}
 @media (prefers-reduced-motion:reduce){.btn-primary::after{animation:none}.tapring{display:none}}
 body[data-s="final"] .scrim::after{background:linear-gradient(180deg,rgba(9,4,6,.3) 0%,rgba(9,4,6,.38) 26%,rgba(9,4,6,.66) 42%)}
+
+/* ===== v13: свет сквозь буквы, перетекание маяка, читаемость финала ===== */
+.sheen{position:relative}
+.sheen-l{position:absolute;inset:0;padding:inherit;pointer-events:none;color:transparent;-webkit-text-fill-color:transparent;
+  background:linear-gradient(100deg,transparent 38%,rgba(255,170,120,.0) 41%,rgba(255,176,120,.95) 47%,rgba(255,226,170,1) 50%,rgba(255,150,110,.9) 53%,rgba(255,150,110,0) 59%,transparent 62%) 125% 0/260% 100% no-repeat;
+  -webkit-background-clip:text;background-clip:text;opacity:0}
+.sheen-l .sw{display:inline-block;white-space:nowrap}.sheen-l .sc{display:inline-block}
+.screen.is-active .sheen-l{animation:tsheen 9s cubic-bezier(.45,0,.2,1) 1.9s infinite}
+@keyframes tsheen{0%{background-position:125% 0;opacity:1}26%{background-position:-25% 0;opacity:1}27%,100%{background-position:-25% 0;opacity:0}}
+/* интро: имя проявляется снизу вверх, как свет, поднимающийся по лунной дорожке */
+.screen.s-intro.is-active h1{-webkit-mask-image:linear-gradient(to top,#000 45%,rgba(0,0,0,.35) 52%,transparent 60%);mask-image:linear-gradient(to top,#000 45%,rgba(0,0,0,.35) 52%,transparent 60%);
+  -webkit-mask-size:100% 320%;mask-size:100% 320%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;animation:moonrise 2.2s cubic-bezier(.3,.6,.2,1) .2s both}
+@keyframes moonrise{from{-webkit-mask-position:0 0%;mask-position:0 0%}to{-webkit-mask-position:0 100%;mask-position:0 100%}}
+/* маяк-призрак при смене экрана */
+.emb-ghost{position:fixed;z-index:11;pointer-events:none;height:auto}
+.emb-ghost .beam,.emb-ghost .lamp{opacity:.85}
+.screen.emb-keep .emblem .ln{animation:none!important}
+.screen.emb-keep .emblem .beam{animation:emb-sweep 4.5s ease-in-out infinite alternate!important}
+.screen.emb-keep .emblem .lamp{animation:emb-flash 4.5s ease-in-out infinite alternate!important}
+.screen.emb-keep .emblem .refl{animation:emb-refl 4.5s ease-in-out infinite alternate!important}
+/* финал: тонкая мягкая подложка только под текстом — салют не спорит с буквами */
+.s-final .final-title,.s-final .final-line,.s-final > .sub,.countdown b,.countdown small,.countdown i{text-shadow:0 0 1px rgba(9,4,6,.55),0 1px 3px rgba(9,4,6,.6),0 0 18px rgba(9,4,6,.75)}
+.s-final .sheen-l{text-shadow:none}
+@media (prefers-reduced-motion:reduce){.sheen-l{display:none}.screen.s-intro.is-active h1{animation:none;-webkit-mask-image:none;mask-image:none}}
+.s-final .countdown small,.s-final .ticket dt,.s-final .tk-head span:last-child{color:rgba(247,236,231,.74)}
+.s-final .countdown small{color:rgba(247,236,231,.9)}

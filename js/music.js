@@ -53,5 +53,12 @@
   btn.addEventListener('click', () => { on = !on; label(); on ? start() : stop(); try { localStorage.setItem('invite-music', on ? 'on' : 'off'); } catch (e) {} });
   document.addEventListener('visibilitychange', () => { if (!ctx || !on) return; document.hidden ? ctx.suspend() : ctx.resume(); });
   label(); // всегда стартуем выключенной: без автозапуска
-  window.MUSIC = { get on() { return on; } };
+  let lastTick = 0;
+  function tick() { // мягкий «стеклянный» тик в тональности музыки, тише неё
+    if (!ctx || !on || ctx.state !== 'running') return; const t = ctx.currentTime; if (t - lastTick < 0.06) return; lastTick = t;
+    const m = CH[(step + 3) % CH.length][4] + 12;
+    [[1, 0.035], [2.01, 0.008]].forEach(([k, a]) => { const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = hz(m) * k; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.4); }); }
+  window.MUSIC = { get on() { return on; }, tick };
 })();

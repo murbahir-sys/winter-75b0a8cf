@@ -2,7 +2,7 @@
    стеклянное переливающееся сердце. Один шейдер, без библиотек. */
 (function () {
   const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0, rx: 0, ry: 0, rp: 1, fw: 0 };
+  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0, rx: 0, ry: 0, rp: 1, fw: 0, sy: 0 };
   const T = Object.assign({}, S);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
@@ -14,7 +14,7 @@
   const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   const fs = `
 precision highp float;
-uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw;
+uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary,rx,ry,rp,fw,sy;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
@@ -155,7 +155,7 @@ vec3 nH(vec3 p){vec2 e=vec2(.0015,-.0015);return normalize(e.xyy*mapH(p+e.xyy)+e
 void main(){
   vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);
   float asp=R.x/R.y;
-  vec2 uv0=uv; uv=uv/(1.+zm*.06)+vec2(0.,pary*.012);
+  vec2 uv0=uv; uv=uv/(1.+zm*.06)+vec2(0.,pary*.012-sy*.09);
   // волна-преломление от точки касания при переходе
   float ring=0.;
   if(rp<.999){ vec2 rv=uv0-vec2(rx,ry); float rd0=length(rv); ring=exp(-pow((rd0-rp*1.9)*9.,2.))*(1.-rp)*(1.-rp);
