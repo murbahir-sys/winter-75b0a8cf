@@ -50,12 +50,11 @@
   }
 
   // ---------- навигация ----------
-  const ORDER = ['intro', 'frames', 'ask', 'yes', 'mood', 'city', 'date', 'act', 'meet', 'wish', 'final'];
+  const ORDER = ['intro', 'ask', 'yes', 'mood', 'city', 'date', 'act', 'meet', 'wish', 'final'];
   const FIRST = ORDER.indexOf('mood'); // дальше этого «назад» не ведёт
   const WIDE = innerWidth > 760 && innerWidth / innerHeight > 1.15;
   const GLS = {
     intro: { heart: 1, burst: 0, tint: 0, hy: -0.06, hs: 0.95, cam: 0 },
-    frames: { heart: 0, tint: 0.2, cam: 0.3 },
     ask:   { heart: 0, cam: 0.6 },
     later: { heart: 0, cam: 0.5 },
     yes:   { heart: 0, tint: 0.6, cam: 1.2 },
@@ -77,7 +76,7 @@
       from.classList.remove('is-active'); from.style.opacity = ''; from.style.filter = ''; from.style.transform = '';
       to.classList.add('is-active'); to.scrollTop = 0;
       cur = name; st.screen = name; save(); document.body.dataset.s = name;
-      if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'frames') frameShow(0); if (name === 'mood') renderMood(); if (name === 'meet') renderMeet();
+      if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'mood') renderMood(); if (name === 'meet') renderMeet();
       animIn(to); busy = false;
     };
     GL.set(GLS[name]);
@@ -111,7 +110,7 @@
       if (p >= 1 && !done) { done = true; holding = false; if (navigator.vibrate) navigator.vibrate([30, 40, 60]);
         const r = btn.getBoundingClientRect(); GL.set({ burst: 1, beat: 0 });
         setTimeout(() => burst(r.left + r.width / 2, r.top + r.height / 2, 60, 1.2), 250);
-        setTimeout(() => go('frames'), 1300); return; }
+        setTimeout(() => go('ask'), 1300); return; }
       if (!done) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -146,27 +145,6 @@
     });
     $('#laterCoffee').addEventListener('click', () => { if (!st.acts.includes(C.short.id)) st.acts.unshift(C.short.id); save(); go('city'); });
   })();
-
-  // ---------- кадры: Крым зимой ----------
-  const FR = X.frames, frScr = $('[data-screen="frames"]'); let frI = 0, frT = 0;
-  $('#frSkip').textContent = X.framesSkip; $('#frTap').textContent = X.framesTap; $('#frNext span').textContent = X.framesNext;
-  const FRCAM = [0.3, 0.9, 1.6, 2.2];
-  function frameShow(i) {
-    frI = Math.max(0, Math.min(FR.length - 1, i));
-    $$('.frame', frScr).forEach((f, k) => f.classList.toggle('on', k === frI));
-    $$('.fr-bars i', frScr).forEach((b, k) => b.classList.toggle('on', k <= frI));
-    $('#frTitle').textContent = FR[frI].t; $('#frText').textContent = FR[frI].s;
-    frScr.classList.toggle('last', frI === FR.length - 1);
-    GL.set({ cam: FRCAM[frI] || 0, tint: 0.2 + frI * 0.25 });
-    if (G && !RM) G.fromTo('.fr-cap > *', { y: 14, opacity: 0, filter: 'blur(6px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.9, ease: 'expo.out', stagger: 0.08, clearProps: 'transform,filter' });
-  }
-  const frGo = d => { if (cur !== 'frames' || busy) return; if (frI + d >= FR.length) return go('ask'); if (frI + d < 0) return; frameShow(frI + d); };
-  frScr.addEventListener('click', e => { if (e.target.closest('#frSkip, #frNext, #music')) return; const x = e.clientX / innerWidth; frGo(x < 0.3 ? -1 : 1); });
-  $('#frSkip').addEventListener('click', () => go('ask'));
-  $('#frNext').addEventListener('click', () => go('ask'));
-  let tx0 = null; frScr.addEventListener('touchstart', e => { tx0 = e.touches[0].clientX; }, { passive: true });
-  frScr.addEventListener('touchend', e => { if (tx0 == null) return; const dx = e.changedTouches[0].clientX - tx0; tx0 = null; if (Math.abs(dx) > 50) { e.preventDefault(); frGo(dx < 0 ? 1 : -1); } });
-  addEventListener('keydown', e => { if (cur !== 'frames') return; if (e.key === 'ArrowRight') frGo(1); if (e.key === 'ArrowLeft') frGo(-1); });
 
   // ---------- настроение ----------
   const MI = {
@@ -243,6 +221,12 @@
       <p>${esc(a.note)}</p>
       <div class="meta">${a.addr ? `<span>${ico('pin')}${esc(a.addr)}</span>` : ''}${a.when ? `<span>${ico('clock')}${esc(a.when)}</span>` : ''}${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Подробнее ${ico('ext')}</a>` : ''}</div></div>`;
   }
+  let listMode = RM, dI = 0;
+  const ownRow = () => `<div class="act own${st.actOwn.trim() ? ' on' : ''}" data-id="own"><h4>${esc(X.actOwn)}</h4><span class="ck"><svg><use href="#i-check"/></svg></span><p>${esc(X.actOwnNote)}</p>
+      <label class="sr" for="actOwn">${esc(X.actOwn)}</label><input id="actOwn" type="text" maxlength="120" autocomplete="off" placeholder="${esc(X.actOwnPh)}" value="${esc(st.actOwn)}"></div>`;
+  function wireOwn() { const ai = $('#actOwn'); if (ai) ai.oninput = () => { st.actOwn = clip(ai.value, 120); save(); const on = !!st.actOwn.trim(); ai.closest('.act').classList.toggle('on', on); actState(); }; }
+  function actState() { $('#actNext').disabled = !hasActs(); const n = st.acts.length + (one(st.actOwn) ? 1 : 0), dc = $('#dCount'); if (dc) dc.textContent = `${X.deckCount}: ${n}`;
+    $$('#dots i').forEach(d => d.classList.toggle('sel', d.dataset.id === '_last' ? (st.acts.some(id => id === C.short.id || C.extras.some(x => x.id === id)) || !!one(st.actOwn)) : st.acts.includes(d.dataset.id))); }
   function renderActs() {
     const c = city(); if (!c) return;
     $('#actCity').textContent = c.name;
@@ -251,21 +235,88 @@
     const fit = a => (!mm.length || (a.mood || []).some(m => mm.includes(m))) && (!st.part || st.part === 'any' || !a.part || a.part === 'any' || a.part === st.part);
     let good = c.acts.filter(fit), rest = c.acts.filter(a => !fit(a));
     if (!good.length) { good = rest; rest = []; }
-    const showRest = any || st.acts.some(id => rest.some(a => a.id === id)) || $('#acts').dataset.more === c.id;
-    const own = `<div class="act own${st.actOwn.trim() ? ' on' : ''}" data-id="own"><h4>${esc(X.actOwn)}</h4><span class="ck"><svg><use href="#i-check"/></svg></span><p>${esc(X.actOwnNote)}</p>
-      <label class="sr" for="actOwn">${esc(X.actOwn)}</label><input id="actOwn" type="text" maxlength="120" autocomplete="off" placeholder="${esc(X.actOwnPh)}" value="${esc(st.actOwn)}"></div>`;
-    $('#acts').innerHTML = actRow(C.short, 'short') + own + (any ? '' : `<div class="grp">${esc(X.actFit)}</div>`) + good.map(a => actRow(a)).join('')
-      + (rest.length ? (showRest ? (any ? '' : `<div class="grp">${esc(X.actRest)}</div>`) + rest.map(a => actRow(a)).join('') : `<button class="btn btn-quiet more" id="actMore" type="button">${esc(X.actRestShow)} · ${rest.length}</button>`) : '')
-      + `<div class="sep">${esc(X.actMore)}</div>` + C.extras.map(a => actRow(a, 'extra')).join('');
-    const mb = $('#actMore'); if (mb) mb.onclick = e => { e.stopPropagation(); $('#acts').dataset.more = c.id; renderActs(); };
-    const ai = $('#actOwn'); ai.oninput = () => { st.actOwn = clip(ai.value, 120); save(); const on = !!st.actOwn.trim(); ai.closest('.act').classList.toggle('on', on); $('#actNext').disabled = !hasActs(); };
-    $('#actNext').disabled = !hasActs();
+    $('#actSubTxt').textContent = listMode ? `${c.name} · ${X.actSub}` : `${c.name} · ${X.deckSub}`;
+    $('#viewToggle span').textContent = listMode ? X.deckShow : X.listShow;
+    $('#deck').hidden = listMode; $('#acts').hidden = !listMode;
+    if (listMode) {
+      $('#deckTrack').innerHTML = '';
+      const showRest = any || st.acts.some(id => rest.some(a => a.id === id)) || $('#acts').dataset.more === c.id;
+      $('#acts').innerHTML = actRow(C.short, 'short') + ownRow() + (any ? '' : `<div class="grp">${esc(X.actFit)}</div>`) + good.map(a => actRow(a)).join('')
+        + (rest.length ? (showRest ? (any ? '' : `<div class="grp">${esc(X.actRest)}</div>`) + rest.map(a => actRow(a)).join('') : `<button class="btn btn-quiet more" id="actMore" type="button">${esc(X.actRestShow)} · ${rest.length}</button>`) : '')
+        + `<div class="sep">${esc(X.actMore)}</div>` + C.extras.map(a => actRow(a, 'extra')).join('');
+      const mb = $('#actMore'); if (mb) mb.onclick = e => { e.stopPropagation(); $('#acts').dataset.more = c.id; renderActs(); };
+    } else {
+      $('#acts').innerHTML = '';
+      const list = good.map(a => [a, !any]).concat(rest.map(a => [a, false]));
+      $('#deckTrack').innerHTML = list.map(([a, f], i) => { const on = st.acts.includes(a.id);
+        return `<article class="slide" data-id="${a.id}" aria-roledescription="слайд" aria-label="${i + 1} из ${list.length + 1}">
+          <div class="pl-stage">${ART.svg(a.id)}${i ? `<button class="pl-arr prev" type="button" aria-label="Предыдущее место">${ico('back')}</button>` : ''}<button class="pl-arr next" type="button" aria-label="Следующее место">${ico('arrow')}</button></div>
+          ${f ? `<span class="pl-tag">${esc(X.deckFit)}</span>` : ''}<h3 class="pl-name">${esc(a.title)}</h3><p class="pl-cap">${esc(a.note)}</p>
+          <div class="pl-meta">${a.addr ? `<span>${ico('pin')}${esc(a.addr)}</span>` : ''}${a.when ? `<span>${ico('clock')}${esc(a.when)}</span>` : ''}${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener noreferrer">Подробнее ${ico('ext')}</a>` : ''}</div>
+          <button class="pl-want${on ? ' on' : ''}" type="button" aria-pressed="${on}" data-id="${a.id}">${esc(on ? X.wanted : X.want)}</button></article>`; }).join('')
+        + `<article class="slide last" data-id="_last" aria-label="${list.length + 1} из ${list.length + 1}"><button class="pl-arr prev solo" type="button" aria-label="Предыдущее место">${ico('back')}</button><h3 class="pl-name">${esc(X.deckLast)}</h3><p class="pl-cap">${esc(X.deckLastSub)}</p>
+          <div class="acts">${actRow(C.short, 'short')}${ownRow()}${C.extras.map(a => actRow(a, 'extra')).join('')}</div></article>`;
+      $('#dots').innerHTML = list.map(([a]) => `<i data-id="${a.id}"></i>`).join('') + '<i data-id="_last" class="lastdot"></i>';
+      dI = Math.min(dI, list.length); deckShow(dI, true);
+    }
+    wireOwn(); actState();
   }
+  // ---------- прорисовка линий: всегда заканчивается целым рисунком ----------
+  function drawDone(sl) { if (!sl) return; cancelAnimationFrame(sl._raf); clearTimeout(sl._to); sl.classList.remove('drawing'); sl.classList.add('drawn');
+    $$('.pl-art .ln', sl).forEach(p => { p.style.strokeDasharray = 'none'; p.style.strokeDashoffset = '0'; }); }
+  function drawSlide(sl) {
+    if (!sl || sl.classList.contains('drawn') || sl.classList.contains('drawing')) return;
+    const ps = $$('.pl-art .ln', sl); if (RM || !ps.length) return drawDone(sl);
+    const L = ps.map(p => { let l = 0; try { l = p.getTotalLength(); } catch (e) {} return l > 0 ? l + 1 : 0; });
+    if (L.some(l => !l)) return drawDone(sl);
+    ps.forEach((p, i) => { p.style.strokeDasharray = `${L[i]} ${L[i]}`; p.style.strokeDashoffset = `${L[i]}`; });
+    sl.classList.add('drawing');
+    const T = 1150, dur = Math.min(650, T * 0.6), gap = ps.length > 1 ? (T - dur) / (ps.length - 1) : 0, t0 = performance.now();
+    const f = now => { const t = now - t0; let done = true;
+      ps.forEach((p, i) => { const k = Math.min(1, Math.max(0, (t - i * gap) / dur)); p.style.strokeDashoffset = `${L[i] * Math.pow(1 - k, 3)}`; if (k < 1) done = false; });
+      if (done) drawDone(sl); else sl._raf = requestAnimationFrame(f); };
+    sl._raf = requestAnimationFrame(f); sl._to = setTimeout(() => drawDone(sl), T + 900); // страховка, если кадры анимации не пришли
+  }
+  function deckShow(i, instant) {
+    const sl = $$('#deckTrack .slide'); if (!sl.length) return;
+    sl.forEach(s => { if (s.classList.contains('drawing')) drawDone(s); }); // быстрый тап: предыдущий рисунок сразу дорисован
+    dI = Math.max(0, Math.min(sl.length - 1, i));
+    const tr = $('#deckTrack'); tr.style.transition = instant ? 'none' : ''; tr.style.transform = `translateX(${-dI * 100}%)`;
+    sl.forEach((s, k) => { s.classList.toggle('cur', k === dI); s.setAttribute('aria-hidden', k !== dI); s.inert = k !== dI; });
+    $$('#dots i').forEach((d, k) => d.classList.toggle('cur', k === dI));
+    $('#dPos').textContent = `${dI + 1} / ${sl.length}`;
+    GL.set({ cam: 3.0 + dI * 0.06 });
+    if (cur === 'act') drawSlide(sl[dI]);
+  }
+  $('#dots').addEventListener('click', e => { const d = e.target.closest('i'); if (d) deckShow($$('#dots i').indexOf(d)); });
+  $('#viewToggle').addEventListener('click', () => { listMode = !listMode; renderActs(); });
+  $('#deckTrack').addEventListener('click', e => {
+    const ar = e.target.closest('.pl-arr'); if (ar) { deckShow(dI + (ar.classList.contains('prev') ? -1 : 1)); return; }
+    const w = e.target.closest('.pl-want');
+    if (w) { const id = w.dataset.id; st.acts = st.acts.includes(id) ? st.acts.filter(x => x !== id) : st.acts.concat(id); save();
+      const on = st.acts.includes(id); w.classList.toggle('on', on); w.setAttribute('aria-pressed', on); w.textContent = on ? X.wanted : X.want; actState();
+      if (on) { const r = w.getBoundingClientRect(); burst(r.left + r.width / 2, r.top, 14, 0.5); if (G && !RM) G.fromTo(w, { scale: 0.92 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1,.5)' }); }
+      return; }
+    const st0 = e.target.closest('.pl-stage'); if (st0) { const sl = st0.closest('.slide'); if (sl.classList.contains('drawing')) drawDone(sl); return; }
+    actsClick(e); });
+  (function () { // свайп
+    const vp = $('#deckVp'), tr = $('#deckTrack'); let x0 = null, y0 = 0, dx = 0, drag = false;
+    vp.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button) return; if (e.target.closest('input')) return; x0 = e.clientX; y0 = e.clientY; dx = 0; drag = false; });
+    vp.addEventListener('pointermove', e => { if (x0 == null) return; dx = e.clientX - x0;
+      if (!drag && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(e.clientY - y0)) { drag = true; tr.style.transition = 'none'; }
+      if (drag) tr.style.transform = `translateX(calc(${-dI * 100}% + ${dx}px))`; });
+    const end = () => { if (x0 == null) return; x0 = null; if (!drag) return; tr.style.transition = '';
+      if (Math.abs(dx) > 50) deckShow(dI + (dx < 0 ? 1 : -1)); else deckShow(dI);
+      vp.addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true }); setTimeout(() => { drag = false; }, 0); };
+    vp.addEventListener('pointerup', end); vp.addEventListener('pointercancel', () => { if (x0 != null) { x0 = null; tr.style.transition = ''; deckShow(dI); } });
+    addEventListener('keydown', e => { if (cur !== 'act' || listMode || e.target.closest('input,textarea')) return; if (e.key === 'ArrowRight') deckShow(dI + 1); if (e.key === 'ArrowLeft') deckShow(dI - 1); });
+  })();
   const hasActs = () => st.acts.length > 0 || !!one(st.actOwn);
   function toggleAct(el) { const id = el.dataset.id; st.acts = st.acts.includes(id) ? st.acts.filter(x => x !== id) : st.acts.concat(id); save();
-    const on = st.acts.includes(id); el.classList.toggle('on', on); el.setAttribute('aria-checked', on); $('#actNext').disabled = !hasActs();
+    const on = st.acts.includes(id); el.classList.toggle('on', on); el.setAttribute('aria-checked', on); actState();
     if (on && G && !RM) G.fromTo(el.querySelector('.ck'), { scale: 0.6 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1,.5)' }); }
-  $('#acts').addEventListener('click', e => { if (e.target.closest('a')) return; const el = e.target.closest('.act'); if (!el) return; if (el.dataset.id === 'own') { $('#actOwn').focus(); return; } toggleAct(el); });
+  function actsClick(e) { if (e.target.closest('a')) return; const el = e.target.closest('.act'); if (!el) return; if (el.dataset.id === 'own') { if (!e.target.closest('input')) $('#actOwn').focus(); return; } toggleAct(el); }
+  $('#acts').addEventListener('click', actsClick);
   $('#acts').addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && e.target.classList.contains('act')) { e.preventDefault(); toggleAct(e.target); } });
   $('#actNext').addEventListener('click', () => { if (hasActs()) go('meet'); });
 
@@ -415,3 +466,5 @@ ${st.mood.includes('own') && one(st.moodOwn) ? `<dt>${esc(X.moodOwnLabel)}</dt><
   if (resume !== 'intro') { GL.jump(GLS[resume]); go(resume, { instant: true }); } else animIn($('[data-screen="intro"]'));
   window.__invite = { go, st, message, weather: (d, id) => DAY.weather(d, C.cities.find(c => c.id === id)), sunset: DAY.sunset };
 })();
+// после прорисовки эмблемы убираем штриховку, чтобы линии гарантированно остались целыми на любом браузере
+document.addEventListener('animationend', e => { if (e.animationName === 'emb-draw' && e.target.classList) e.target.style.strokeDasharray = 'none'; });
