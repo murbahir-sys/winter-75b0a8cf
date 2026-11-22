@@ -283,14 +283,14 @@ input[type=text]::placeholder{color:rgba(247,236,231,.42)}
 /* v7: места карточками */
 .deck{width:100%;max-width:520px}
 .deck-vp{overflow:hidden;width:100%;touch-action:pan-y;border-radius:20px}
-.deck-track{display:flex;transition:transform .55s var(--ease)}
+.deck-track{display:flex}
 .slide{flex:0 0 100%;min-width:0;padding:6px 6px 4px;text-align:center;display:flex;flex-direction:column;align-items:center}
 .pl-stage{position:relative;width:min(100%,440px,calc(31vh * 1.6));aspect-ratio:16/10;border:1px solid var(--line);border-radius:18px;background:radial-gradient(120% 90% at 50% 20%,rgba(255,180,143,.07),rgba(11,5,7,.25) 70%);display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .pl-art{width:94%;height:auto;overflow:visible}
 .pl-art .ln{fill:none;stroke:#ffb48f;stroke-opacity:.92;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .pl-art .ln.thin{stroke-width:1.05;stroke-opacity:.6}
 .pl-art .lt,.pl-art .fl{fill:#ffd7a6;opacity:0;transition:opacity .8s var(--ease)}
-.slide:not(.drawn):not(.drawing) .pl-art{opacity:0}
+.slide:not(.drawn):not(.drawing):not(.scrub) .pl-art{opacity:0}
 .slide.drawn .pl-art .lt{opacity:.95;animation:tw 2.8s ease-in-out infinite}
 .slide.drawn .pl-art .lt:nth-of-type(2n){animation-delay:-1s}.slide.drawn .pl-art .lt:nth-of-type(3n){animation-delay:-1.8s}
 .slide.drawn .pl-art .fl{opacity:1}
@@ -319,8 +319,47 @@ input[type=text]::placeholder{color:rgba(247,236,231,.42)}
 .pl-arr.solo{position:static;margin:0 auto 4px 0}
 .deck-info{margin:0;font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
 .view-toggle{margin:14px auto 0;font-size:13.5px}
-@media (prefers-reduced-motion:reduce){.deck-track{transition:none}.slide.drawn .pl-art .lt{animation:none}}
+@media (prefers-reduced-motion:reduce){.slide.drawn .pl-art .lt{animation:none}}
 .s-act .head{margin-bottom:12px}
 .s-act .head .wide{font-size:clamp(22px,6.2vw,52px);margin-bottom:8px}
 .s-act .head .sub{margin-top:0}
 @media (max-width:359px){.city .co{display:none}}
+
+/* ===== v11: кинематографичные переходы, свет и микровзаимодействия ===== */
+.split-w{perspective:600px}.split-c{display:inline-block;transform-origin:50% 100%}
+.split-wd{display:inline-block}
+/* засветка для режима без WebGL */
+.leak{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(60% 45% at 50% 40%,rgba(255,120,70,.28),transparent 70%)}
+.leak.go{animation:leak 1.1s ease-in-out both}
+@keyframes leak{0%{opacity:0;transform:translateX(calc(var(--lk,1) * -60%))}45%{opacity:1}100%{opacity:0;transform:translateX(calc(var(--lk,1) * 60%))}}
+/* виньетка поверх DOM — мягкая, только по краям */
+.vig{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(130% 95% at 50% 45%,transparent 62%,rgba(5,2,4,.42) 100%)}
+.grain{opacity:.06}
+/* кнопки: рябь касания, свечение при нажатии, блик на главной */
+.btn{position:relative;overflow:hidden;isolation:isolate}
+.btn .rip{position:absolute;border-radius:50%;pointer-events:none;width:var(--rs);height:var(--rs);left:var(--rx);top:var(--ry);margin:calc(var(--rs) / -2) 0 0 calc(var(--rs) / -2);background:radial-gradient(circle,rgba(255,255,255,.38),rgba(255,255,255,0) 65%);transform:scale(0);opacity:1;animation:rip .7s cubic-bezier(.2,.7,.2,1) forwards;z-index:-1}
+.btn-quiet .rip,.pl-want .rip,.chip .rip{background:radial-gradient(circle,rgba(255,180,143,.35),rgba(255,180,143,0) 65%)}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+.btn-primary:active{box-shadow:0 0 0 1px rgba(255,190,170,.35),0 10px 40px -6px rgba(227,38,76,1),0 0 60px -10px rgba(255,120,90,.7)}
+.btn-primary::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);transform:translateX(-120%);animation:sheen 5.5s cubic-bezier(.4,0,.2,1) 1.8s infinite}
+@keyframes sheen{0%{transform:translateX(-120%)}22%,100%{transform:translateX(120%)}}
+.pl-want,.chip{position:relative;overflow:hidden}
+.btn-quiet:active,.pl-want:active{box-shadow:0 0 24px -6px rgba(255,180,143,.55)}
+/* колода: глубина */
+.deck-vp{perspective:1100px}
+.slide{transform-origin:50% 50%;backface-visibility:hidden}
+/* билет: печать */
+.ticket.printing::after{content:'';position:absolute;left:8px;right:8px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#ffd7a6 30%,#fff 50%,#ffd7a6 70%,transparent);box-shadow:0 0 22px 5px rgba(255,170,130,.45);animation:scan 1.5s cubic-bezier(.3,.6,.2,1) .6s both}
+@keyframes scan{0%{top:0;opacity:0}8%{opacity:1}85%{opacity:1}100%{top:calc(100% - 2px);opacity:0}}
+/* счётчик: перекатывающиеся цифры */
+.countdown b{display:flex;justify-content:center}
+.dg{position:relative;display:inline-block;overflow:hidden;padding:.08em 0;margin:-.08em 0}
+.dg::before{content:'0';visibility:hidden}
+.dgv{position:absolute;left:0;right:0;top:.08em;text-align:center}
+.dgv.in{animation:dgIn .6s cubic-bezier(.2,.8,.2,1) both}
+.dgv.out{animation:dgOut .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dgIn{0%{top:.8em;opacity:0}30%{opacity:.4}100%{top:.08em;opacity:1}}
+@keyframes dgOut{0%{top:.08em;opacity:1}55%{opacity:0}100%{top:-.65em;opacity:0}}
+@media (prefers-reduced-motion:reduce){.btn-primary::before,.leak,.ticket.printing::after{animation:none;display:none}.btn .rip{display:none}.dgv.in,.dgv.out{animation:none}}
+html:not(.no-gl) .vig{opacity:.55}
+.btn-primary{transition:transform .25s var(--ease),translate .35s var(--ease),background-color .3s,box-shadow .3s}

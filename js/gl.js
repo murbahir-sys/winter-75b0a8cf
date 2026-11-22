@@ -2,7 +2,7 @@
    стеклянное переливающееся сердце. Один шейдер, без библиотек. */
 (function () {
   const cv = document.getElementById('gl');
-  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0 };
+  const S = { heart: 1, fill: 0, burst: 0, cam: 0, par: 0, tint: 0, streak: 0, beat: 0, hy: 0, hs: 1, mx: 0, my: 0, mo: 0, zm: 0, lk: 0, lp: 0, pary: 0 };
   const T = Object.assign({}, S);
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const api = { ok: false, rm: RM, set(o) { Object.assign(T, o); }, jump(o) { Object.assign(T, o); Object.assign(S, o); }, state: S, target: T };
@@ -14,7 +14,7 @@
   const vs = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
   const fs = `
 precision highp float;
-uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo;
+uniform vec2 R; uniform float t,q,heart,fill,burst,cam,par,tint,streak,beat,hy,hs,mx,my,mo,zm,lk,lp,pary;
 #define PI 3.14159265
 float h11(float n){return fract(sin(n*127.1)*43758.5453);}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
@@ -42,7 +42,8 @@ vec3 world(vec2 uv,float asp){
   // луна в дымке
   vec2 mp=mix(vec2(-.42*asp+cam*.02,.48),vec2(mx,my),mo); // mo: луна встаёт в «небо» эмблемы
   float md=length(uv-mp);
-  col+=vec3(1.,.86,.72)*(smoothstep(.042,.038,md)*.8+exp(-md*9.)*.18);
+  col+=vec3(1.,.86,.72)*(smoothstep(.042,.038,md)*.8+exp(-md*9.)*.18+exp(-md*3.2)*.045);
+  col+=vec3(1.,.7,.55)*smoothstep(.012,0.,abs(md-.075))*.035; // тонкое гало
   // горы: 3 слоя, туман между ними
   float bay=smoothstep(.0,.75,abs(w*.9-.05));
   for(int i=0;i<3;i++){
@@ -82,6 +83,8 @@ vec3 world(vec2 uv,float asp){
     sea+=vec3(.6,.25,.15)*exp(-dy*12.)*.25;
     // лунная дорожка
     sea+=vec3(1.,.85,.7)*exp(-abs(uv.x-mp.x)*18.)*exp(-dy*3.)*rip*.35;
+    float gl1=step(.986,h21(floor(vec2((uv.x-mp.x)*240.,dy*520./(dy*6.+.3)))+floor(t*5.)));
+    sea+=vec3(1.,.9,.78)*gl1*exp(-abs(uv.x-mp.x)*(9.+dy*30.))*exp(-dy*4.)*.55; // блёстки на лунной дорожке
     col=sea;
   }
   return col;
@@ -96,6 +99,10 @@ vec3 snowFx(vec2 uv){
     float d=length(f-o);
     c+=vec3(1.,.93,.9)*smoothstep(.07-fk*.015,0.,d)*step(.55,h21(ce+9.))*(.45-fk*.11);
   }
+  // близкие крупные хлопья в расфокусе — глубина
+  vec2 p=uv*2.6; p.y+=t*.95; p.x+=sin(t*.2)*.4+cam*3.5+par*.25;
+  vec2 ce=floor(p); vec2 f=fract(p)-.5; vec2 o=(vec2(h21(ce+2.),h21(ce+7.))-.5)*.6;
+  c+=vec3(1.,.9,.86)*smoothstep(.17,.02,length(f-o))*step(.78,h21(ce+11.))*.07;
   return c;
 }
 
@@ -121,6 +128,7 @@ vec3 nH(vec3 p){vec2 e=vec2(.0015,-.0015);return normalize(e.xyy*mapH(p+e.xyy)+e
 void main(){
   vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);
   float asp=R.x/R.y;
+  vec2 uv0=uv; uv=uv/(1.+zm*.06)+vec2(0.,pary*.012);
   vec3 col=world(uv,asp);
   vec3 ro=vec3(0.,0.,3.2);
   // ---------- сердце ----------
@@ -187,8 +195,13 @@ void main(){
   col+=snowFx(uv);
   // анаморфный блик
   col+=vec3(1.,.55,.45)*exp(-abs(uv.y-hy)*40.)*streak*1.3+vec3(1.,.8,.7)*streak*.18;
+  // световая засветка при переходах (light leak)
+  if(lk>.001){ vec2 lc=vec2(lp*1.25*max(asp,.6),.15-lp*.1);
+    col+=vec3(1.,.42,.22)*exp(-length((uv0-lc)*vec2(.55,1.))*2.6)*lk*.55+vec3(1.,.75,.5)*exp(-abs(uv0.x-lc.x+uv0.y*.35)*9.)*lk*.12; }
   // грейд
-  col*=1.-.38*dot2(uv*vec2(.7/max(asp,.6),.85));
+  col*=1.-.38*dot2(uv0*vec2(.7/max(asp,.6),.85));
+  float lum=dot(col,vec3(.3,.59,.11));
+  col*=mix(vec3(.93,.95,1.07),vec3(1.05,1.,.93),smoothstep(.02,.5,lum)); // холодные тени, тёплые света
   col=1.-exp(-col*1.7);
   gl_FragColor=vec4(pow(col,vec3(.96)),1.);
 }`;
@@ -215,10 +228,11 @@ void main(){
   addEventListener('resize', size); size();
   // параллакс от пальца/мыши и наклона
   addEventListener('pointermove', e => { T.par = (e.clientX / innerWidth - .5) * 2; }, { passive: true });
-  addEventListener('deviceorientation', e => { if (e.gamma != null) T.par = Math.max(-1, Math.min(1, e.gamma / 30)); }, { passive: true });
+  addEventListener('pointermove', e => { T.pary = (e.clientY / innerHeight - .5) * 2; }, { passive: true });
+  addEventListener('deviceorientation', e => { if (e.gamma != null) T.par = Math.max(-1, Math.min(1, e.gamma / 30)); if (e.beta != null) T.pary = Math.max(-1, Math.min(1, (e.beta - 45) / 35)); }, { passive: true });
 
   const t0 = performance.now(); let last = t0, frames = 0, acc = 0, tt = 0;
-  const fast = { streak: 9, burst: 2.2 };
+  const fast = { streak: 9, burst: 2.2, zm: 3.2, lk: 6 };
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; tt += dt * (RM ? 0.25 : 1);
     for (const k in T) S[k] += (T[k] - S[k]) * Math.min(1, dt * (fast[k] || 2.6));
