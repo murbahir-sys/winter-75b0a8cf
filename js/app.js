@@ -23,6 +23,28 @@
     el.innerHTML = el.textContent.split(' ').map(w => `<span class="split-w" aria-hidden="true">${[...w].map(ch => `<span class="split-c">${esc(ch)}</span>`).join('')}</span>`).join(' ');
   });
 
+  // заголовки всегда помещаются по ширине: самое длинное слово ≤ 88% доступной ширины (запас на шрифты, масштаб текста Android)
+  function fitTitles(root) {
+    const vw = document.documentElement.clientWidth || innerWidth;
+    $$('.wide, .display, .pl-name', root || document).forEach(el => {
+      el.style.fontSize = '';
+      const cs = getComputedStyle(el), base = parseFloat(cs.fontSize); if (!base) return;
+      const words = $$('.split-w', el); let maxW = 0;
+      if (words.length) words.forEach(w => { maxW = Math.max(maxW, w.getBoundingClientRect().width); });
+      else { const m = document.createElement('span'); m.style.cssText = `position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;font:${cs.font};letter-spacing:${cs.letterSpacing};text-transform:${cs.textTransform}`;
+        document.body.appendChild(m); el.textContent.split(/\s+/).forEach(t => { m.textContent = t; maxW = Math.max(maxW, m.getBoundingClientRect().width); }); m.remove(); }
+      const par = el.parentElement, ps = getComputedStyle(par);
+      const box = Math.min(vw - 32, par.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight));
+      const need = maxW + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), avail = box * 0.88;
+      if (need > avail && need > 0) el.style.fontSize = `${Math.max(12, Math.floor(base * avail / need * 10) / 10)}px`;
+    });
+  }
+  fitTitles();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitTitles());
+  let fitT; const refit = () => { clearTimeout(fitT); fitT = setTimeout(() => fitTitles(), 120); };
+  addEventListener('resize', refit); addEventListener('orientationchange', refit); if (window.visualViewport) visualViewport.addEventListener('resize', refit);
+  window.__fit = fitTitles;
+
   // лёгкое зерно
   (function () { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const d = x.createImageData(128, 128);
     for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
@@ -77,7 +99,7 @@
       to.classList.add('is-active'); to.scrollTop = 0;
       cur = name; st.screen = name; save(); document.body.dataset.s = name;
       if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'mood') renderMood(); if (name === 'meet') renderMeet();
-      animIn(to); busy = false;
+      fitTitles(to); animIn(to); busy = false;
     };
     GL.set(GLS[name]);
     if (opt.instant || !G || RM) { swap(); return; }
@@ -259,7 +281,7 @@
       $('#dots').innerHTML = list.map(([a]) => `<i data-id="${a.id}"></i>`).join('') + '<i data-id="_last" class="lastdot"></i>';
       dI = Math.min(dI, list.length); deckShow(dI, true);
     }
-    wireOwn(); actState();
+    wireOwn(); actState(); fitTitles($('[data-screen="act"]'));
   }
   // ---------- прорисовка линий: всегда заканчивается целым рисунком ----------
   function drawDone(sl) { if (!sl) return; cancelAnimationFrame(sl._raf); clearTimeout(sl._to); sl.classList.remove('drawing'); sl.classList.add('drawn');
