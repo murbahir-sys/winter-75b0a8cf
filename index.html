@@ -8,8 +8,8 @@
 <meta name="referrer" content="no-referrer">
 <title>Для тебя</title>
 <link rel="preload" href="fonts/c865567969.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/fonts.css?v=5">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/fonts.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=6">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 28S3 20 3 11a6.5 6.5 0 0 1 13-2 6.5 6.5 0 0 1 13 2c0 9-13 17-13 17z' fill='%23e8274b'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -151,6 +151,7 @@
   <section class="screen s-mood scroll" data-screen="mood" aria-label="Настроение">
     <div class="head"><h2 class="wide" data-t="moodTitle" data-split></h2><p class="sub" data-t="moodSub"></p></div>
     <div class="moods" id="moods" role="group" aria-label="Настроение"></div>
+    <div class="own-box" id="moodOwnBox" hidden><label class="sr" for="moodOwn">Чего хочется</label><textarea id="moodOwn" rows="2" maxlength="160"></textarea></div>
     <div class="parts" id="parts" role="radiogroup" aria-label="Время суток"></div>
     <div class="nav"><button class="btn btn-icon" data-back aria-label="Назад"><svg class="ic"><use href="#i-back"/></svg></button><button class="btn btn-primary grow" id="moodNext">Дальше<svg class="ic"><use href="#i-arrow"/></svg></button></div>
   </section>
@@ -177,6 +178,13 @@
     <div class="nav sticky"><button class="btn btn-icon" data-back aria-label="Назад"><svg class="ic"><use href="#i-back"/></svg></button><button class="btn btn-primary grow" id="actNext" disabled>Дальше<svg class="ic"><use href="#i-arrow"/></svg></button></div>
   </section>
 
+  <section class="screen s-meet scroll" data-screen="meet" aria-label="Где встретимся">
+    <div class="head"><h2 class="wide" data-t="meetTitle" data-split></h2><p class="sub" data-t="meetSub"></p></div>
+    <div class="moods meets" id="meets" role="radiogroup" aria-label="Где встретимся"></div>
+    <div class="own-box" id="meetOtherBox" hidden><label class="sr" for="meetOther">Где встретимся</label><input id="meetOther" type="text" maxlength="120" autocomplete="off"></div>
+    <div class="nav"><button class="btn btn-icon" data-back aria-label="Назад"><svg class="ic"><use href="#i-back"/></svg></button><button class="btn btn-primary grow" id="meetNext">Дальше<svg class="ic"><use href="#i-arrow"/></svg></button></div>
+  </section>
+
   <section class="screen s-wish scroll" data-screen="wish" aria-label="Пожелание">
     <div class="head"><h2 class="wide" data-t="wishTitle" data-split></h2><p class="sub" data-t="wishSub"></p></div>
     <label class="sr" for="wish">Твоё пожелание</label>
@@ -187,6 +195,7 @@
 
   <section class="screen s-final scroll" data-screen="final" aria-label="Итог">
     <h2 class="wide final-title" data-t="finalTitle" data-split></h2>
+    <p class="serif-line final-line" data-t="finalLine"></p>
     <p class="sub" data-t="finalSub"></p>
     <div class="countdown" id="cd"></div>
     <article class="ticket" id="ticket"></article>
@@ -205,11 +214,11 @@
   </section>
 </main>
 
-<script src="config.js?v=5"></script>
-<script src="js/gsap.min.js?v=5"></script>
-<script src="js/gl.js?v=5"></script>
-<script src="js/day.js?v=5"></script>
-<script src="js/music.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="js/gsap.min.js?v=6"></script>
+<script src="js/gl.js?v=6"></script>
+<script src="js/day.js?v=6"></script>
+<script src="js/music.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

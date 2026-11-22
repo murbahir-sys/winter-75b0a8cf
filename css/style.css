@@ -313,3 +313,18 @@ html:not(.no-gl) .art .moon{display:none}
   .s-frames{padding-top:24px}
   .art{width:min(520px,44vw)}
 }
+/* v6 */
+.own-box{width:100%;max-width:640px;margin-top:10px}
+.own-box textarea{min-height:0}
+input[type=text]{width:100%;max-width:640px;font:inherit;font-size:16px;color:inherit;border-radius:12px;border:1px solid var(--line2);background:rgba(247,236,231,.05);padding:13px 16px;outline:none;caret-color:var(--cherry);transition:border-color .3s}
+input[type=text]:focus{border-color:rgba(255,180,143,.7)}
+input[type=text]::placeholder{color:rgba(247,236,231,.42)}
+.act.own{cursor:text}
+.act.own input{grid-column:1/-1;margin-top:10px}
+.meets .mood b{font-size:17px;line-height:1.25}
+.map-meet{margin:6px 0 0;color:var(--peach);font-size:14.5px}
+
+.final-line{margin:-2px 0 14px;font-size:clamp(20px,5.4vw,30px)}
+.tk-head span{white-space:nowrap}
+@media (max-width:400px){.tk-head{letter-spacing:.14em}}
+.mood b{text-wrap:balance}

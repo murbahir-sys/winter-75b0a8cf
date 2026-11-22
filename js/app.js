@@ -2,7 +2,7 @@
   const C = window.INVITE, X = C.texts, G = window.gsap, RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const KEY = 'invite-lera-v2';
-  const blank = { city: null, dates: [], time: null, acts: [], wish: '', mood: [], part: null, screen: 'intro' };
+  const blank = { city: null, dates: [], time: null, acts: [], wish: '', mood: [], part: null, moodOwn: '', actOwn: '', meet: null, meetPlace: '', screen: 'intro' };
   const st = Object.assign({}, blank, load());
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
@@ -50,7 +50,7 @@
   }
 
   // ---------- навигация ----------
-  const ORDER = ['intro', 'frames', 'ask', 'yes', 'mood', 'city', 'date', 'act', 'wish', 'final'];
+  const ORDER = ['intro', 'frames', 'ask', 'yes', 'mood', 'city', 'date', 'act', 'meet', 'wish', 'final'];
   const FIRST = ORDER.indexOf('mood'); // дальше этого «назад» не ведёт
   const WIDE = innerWidth > 760 && innerWidth / innerHeight > 1.15;
   const GLS = {
@@ -60,7 +60,7 @@
     later: { heart: 0, cam: 0.5 },
     yes:   { heart: 0, tint: 0.6, cam: 1.2 },
     mood:  { heart: 0, tint: 0.5, cam: 1.5 },
-    city:  { heart: 0, tint: 0.3, cam: 1.8 }, date: { heart: 0, tint: 0.45, cam: 2.4 }, act: { heart: 0, tint: 0.3, cam: 3.0 }, wish: { heart: 0, tint: 0.7, cam: 3.6 },
+    city:  { heart: 0, tint: 0.3, cam: 1.8 }, date: { heart: 0, tint: 0.45, cam: 2.4 }, act: { heart: 0, tint: 0.3, cam: 3.0 }, meet: { heart: 0, tint: 0.5, cam: 3.3 }, wish: { heart: 0, tint: 0.7, cam: 3.6 },
     final: { heart: 0.85, burst: 0, fill: 1, tint: 1, hy: 0.28, hs: 0.42, cam: 4.2 },
   };
   let cur = 'intro', busy = false;
@@ -77,7 +77,7 @@
       from.classList.remove('is-active'); from.style.opacity = ''; from.style.filter = ''; from.style.transform = '';
       to.classList.add('is-active'); to.scrollTop = 0;
       cur = name; st.screen = name; save(); document.body.dataset.s = name;
-      if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'frames') frameShow(0); if (name === 'mood') renderMood();
+      if (name === 'act') renderActs(); if (name === 'date') renderCal(); if (name === 'final') renderFinal(); if (name === 'frames') frameShow(0); if (name === 'mood') renderMood(); if (name === 'meet') renderMeet();
       animIn(to); busy = false;
     };
     GL.set(GLS[name]);
@@ -173,15 +173,22 @@
     coffee: '<svg class="mi" viewBox="0 0 52 52"><path d="M12 22h22v10a9 9 0 0 1-9 9h-4a9 9 0 0 1-9-9V22z"/><path d="M34 25h3a4 4 0 0 1 0 8h-3"/><path d="M19 17q-2-3 0-6M25 17q-2-3 0-6" opacity=".6"/><path d="M9 44h30"/></svg>',
     walk: '<svg class="mi" viewBox="0 0 52 52"><path d="M6 40q10-4 20-2t20-4"/><path d="M6 46q12-3 22-1t18-3" opacity=".5"/><circle cx="36" cy="14" r="5"/><path d="M14 30l6-10 6 6 6-8 8 12" opacity=".8"/></svg>',
     dinner: '<svg class="mi" viewBox="0 0 52 52"><path d="M26 8v6"/><path d="M23 14h6l-1 6h-4z"/><circle cx="26" cy="32" r="10"/><circle cx="26" cy="32" r="5" opacity=".5"/><path d="M10 22v20M8 22v6a2 2 0 0 0 4 0v-6M42 22c-3 2-3 8 0 10v10"/></svg>',
+    own: '<svg class="mi" viewBox="0 0 52 52"><path d="M12 40l3-9L34 12a3 3 0 0 1 5 5L20 36z"/><path d="M31 15l5 5" opacity=".6"/><path d="M10 45h18" opacity=".5"/><path d="M38 34q4 0 4-4M42 40q2 0 2-2" opacity=".6"/></svg>',
   };
+  const clip = (v, n) => String(v || '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').slice(0, n);
+  const one = v => String(v || '').replace(/\s+/g, ' ').trim();
   function renderMood() {
-    $('#moods').innerHTML = ['coffee', 'walk', 'dinner'].map(k => { const on = st.mood.includes(k);
+    $('#moods').innerHTML = ['coffee', 'walk', 'dinner', 'own'].map(k => { const on = st.mood.includes(k);
       return `<button class="mood${on ? ' on' : ''}" data-m="${k}" aria-pressed="${on}">${MI[k]}<span><b>${esc(X.moods[k])}</b><small>${esc(X.moodNotes[k])}</small></span><span class="ck"><svg><use href="#i-check"/></svg></span></button>`; }).join('');
+    const ob = $('#moodOwnBox'), oi = $('#moodOwn'); ob.hidden = !st.mood.includes('own'); if (oi.value !== st.moodOwn) oi.value = st.moodOwn;
     $('#parts').innerHTML = ['day', 'evening', 'any'].map(k => `<button class="chip${st.part === k ? ' on' : ''}" role="radio" data-p="${k}" aria-checked="${st.part === k}">${esc(X.parts[k])}</button>`).join('');
   }
   $('#moods').addEventListener('click', e => { const b = e.target.closest('.mood'); if (!b) return; const k = b.dataset.m;
     st.mood = st.mood.includes(k) ? st.mood.filter(x => x !== k) : st.mood.concat(k); save(); renderMood();
-    if (G && !RM && st.mood.includes(k)) G.fromTo($(`.mood[data-m="${k}"] .ck`), { scale: 0.6 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1,.5)' }); });
+    if (G && !RM && st.mood.includes(k)) G.fromTo($(`.mood[data-m="${k}"] .ck`), { scale: 0.6 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1,.5)' });
+    if (k === 'own' && st.mood.includes('own')) setTimeout(() => $('#moodOwn').focus({ preventScroll: false }), 60); });
+  $('#moodOwn').placeholder = X.moodOwnPh;
+  $('#moodOwn').addEventListener('input', e => { st.moodOwn = clip(e.target.value, 160); save(); });
   $('#parts').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; st.part = st.part === b.dataset.p ? null : b.dataset.p; save(); renderMood(); });
   $('#moodNext').addEventListener('click', () => go('city'));
 
@@ -239,22 +246,51 @@
   function renderActs() {
     const c = city(); if (!c) return;
     $('#actCity').textContent = c.name;
-    const any = !st.mood.length && (!st.part || st.part === 'any');
-    const fit = a => (!st.mood.length || (a.mood || []).some(m => st.mood.includes(m))) && (!st.part || st.part === 'any' || !a.part || a.part === 'any' || a.part === st.part);
-    const good = c.acts.filter(fit), rest = c.acts.filter(a => !fit(a));
+    const mm = st.mood.filter(m => m !== 'own');
+    const any = !mm.length && (!st.part || st.part === 'any');
+    const fit = a => (!mm.length || (a.mood || []).some(m => mm.includes(m))) && (!st.part || st.part === 'any' || !a.part || a.part === 'any' || a.part === st.part);
+    let good = c.acts.filter(fit), rest = c.acts.filter(a => !fit(a));
+    if (!good.length) { good = rest; rest = []; }
     const showRest = any || st.acts.some(id => rest.some(a => a.id === id)) || $('#acts').dataset.more === c.id;
-    $('#acts').innerHTML = actRow(C.short, 'short') + (any ? '' : `<div class="grp">${esc(X.actFit)}</div>`) + good.map(a => actRow(a)).join('')
+    const own = `<div class="act own${st.actOwn.trim() ? ' on' : ''}" data-id="own"><h4>${esc(X.actOwn)}</h4><span class="ck"><svg><use href="#i-check"/></svg></span><p>${esc(X.actOwnNote)}</p>
+      <label class="sr" for="actOwn">${esc(X.actOwn)}</label><input id="actOwn" type="text" maxlength="120" autocomplete="off" placeholder="${esc(X.actOwnPh)}" value="${esc(st.actOwn)}"></div>`;
+    $('#acts').innerHTML = actRow(C.short, 'short') + own + (any ? '' : `<div class="grp">${esc(X.actFit)}</div>`) + good.map(a => actRow(a)).join('')
       + (rest.length ? (showRest ? (any ? '' : `<div class="grp">${esc(X.actRest)}</div>`) + rest.map(a => actRow(a)).join('') : `<button class="btn btn-quiet more" id="actMore" type="button">${esc(X.actRestShow)} · ${rest.length}</button>`) : '')
       + `<div class="sep">${esc(X.actMore)}</div>` + C.extras.map(a => actRow(a, 'extra')).join('');
     const mb = $('#actMore'); if (mb) mb.onclick = e => { e.stopPropagation(); $('#acts').dataset.more = c.id; renderActs(); };
-    $('#actNext').disabled = !st.acts.length;
+    const ai = $('#actOwn'); ai.oninput = () => { st.actOwn = clip(ai.value, 120); save(); const on = !!st.actOwn.trim(); ai.closest('.act').classList.toggle('on', on); $('#actNext').disabled = !hasActs(); };
+    $('#actNext').disabled = !hasActs();
   }
+  const hasActs = () => st.acts.length > 0 || !!one(st.actOwn);
   function toggleAct(el) { const id = el.dataset.id; st.acts = st.acts.includes(id) ? st.acts.filter(x => x !== id) : st.acts.concat(id); save();
-    const on = st.acts.includes(id); el.classList.toggle('on', on); el.setAttribute('aria-checked', on); $('#actNext').disabled = !st.acts.length;
+    const on = st.acts.includes(id); el.classList.toggle('on', on); el.setAttribute('aria-checked', on); $('#actNext').disabled = !hasActs();
     if (on && G && !RM) G.fromTo(el.querySelector('.ck'), { scale: 0.6 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1,.5)' }); }
-  $('#acts').addEventListener('click', e => { if (e.target.closest('a')) return; const el = e.target.closest('.act'); if (el) toggleAct(el); });
+  $('#acts').addEventListener('click', e => { if (e.target.closest('a')) return; const el = e.target.closest('.act'); if (!el) return; if (el.dataset.id === 'own') { $('#actOwn').focus(); return; } toggleAct(el); });
   $('#acts').addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && e.target.classList.contains('act')) { e.preventDefault(); toggleAct(e.target); } });
-  $('#actNext').addEventListener('click', () => { if (st.acts.length) go('wish'); });
+  $('#actNext').addEventListener('click', () => { if (hasActs()) go('meet'); });
+
+  // ---------- где встретимся ----------
+  const MEI = {
+    pickup: '<svg class="mi" viewBox="0 0 52 52"><path d="M10 26L26 12l16 14"/><path d="M15 23v18h22V23"/><path d="M23 41v-9h6v9" opacity=".6"/></svg>',
+    there: '<svg class="mi" viewBox="0 0 52 52"><path d="M26 44s-12-12.5-12-21a12 12 0 0 1 24 0c0 8.5-12 21-12 21z"/><circle cx="26" cy="23" r="4.5" opacity=".6"/></svg>',
+    other: '<svg class="mi" viewBox="0 0 52 52"><path d="M14 44V10"/><path d="M14 12h22l-5 6 5 6H14" opacity=".8"/><path d="M8 44h16" opacity=".5"/></svg>',
+    chat: '<svg class="mi" viewBox="0 0 52 52"><path d="M9 12h34v20H20l-9 8V12z"/><path d="M17 20h18M17 25h11" opacity=".6"/></svg>',
+  };
+  function renderMeet() {
+    $('#meets').innerHTML = ['pickup', 'there', 'other', 'chat'].map(k => { const on = st.meet === k, m = X.meet[k];
+      return `<button class="mood${on ? ' on' : ''}" data-k="${k}" role="radio" aria-checked="${on}">${MEI[k]}<span><b>${esc(m.t)}</b><small>${esc(m.s)}</small></span><span class="ck"><svg><use href="#i-check"/></svg></span></button>`; }).join('');
+    const b = $('#meetOtherBox'), i = $('#meetOther'); b.hidden = st.meet !== 'other'; if (i.value !== st.meetPlace) i.value = st.meetPlace;
+  }
+  $('#meetOther').placeholder = X.meetOtherPh;
+  $('#meets').addEventListener('click', e => { const b = e.target.closest('.mood'); if (!b) return; const k = b.dataset.k;
+    st.meet = st.meet === k ? null : k; save(); renderMeet();
+    if (G && !RM && st.meet === k) G.fromTo($(`#meets .mood[data-k="${k}"] .ck`), { scale: 0.6 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1,.5)' });
+    if (st.meet === 'other') setTimeout(() => $('#meetOther').focus(), 60); });
+  $('#meetOther').addEventListener('input', e => { st.meetPlace = clip(e.target.value, 120); save(); });
+  $('#meetNext').addEventListener('click', () => go('wish'));
+  function meetTxt(forMsg) { const k = st.meet; if (!k) return '';
+    if (k === 'other') { const p = one(st.meetPlace); return p ? p : (forMsg ? 'другое место, напишу здесь' : X.meet.other.t); }
+    return forMsg ? X.meet[k].msg : X.meetTicket[k]; }
 
   // ---------- пожелание ----------
   const wish = $('#wish'); wish.value = st.wish || '';
@@ -265,14 +301,16 @@
 
   // ---------- финал ----------
   function fmtDate(s) { const [y, m, d] = s.split('-').map(Number); const w = new Date(y, m - 1, d).getDay(); return `${d} ${MONG[m - 1]} (${DOW[w]})`; }
-  const moodTxt = () => [st.mood.map(k => X.moods[k].toLowerCase()).join(', '), st.part && st.part !== 'any' ? X.parts[st.part].toLowerCase() : ''].filter(Boolean).join(' · ');
+  const moodTxt = () => [st.mood.filter(k => k !== 'own').map(k => X.moods[k].toLowerCase()).join(', '), st.part && st.part !== 'any' ? X.parts[st.part].toLowerCase() : ''].filter(Boolean).join(' · ');
   const timeTxt = () => st.time === 'any' ? X.anyTime.toLowerCase() : (st.time || '—');
-  const chosen = () => allActs().filter(a => st.acts.includes(a.id));
+  const chosen = () => allActs().filter(a => st.acts.includes(a.id)).concat(one(st.actOwn) ? [{ id: 'own', title: `${X.actOwn}: ${one(st.actOwn)}`, addr: '' }] : []);
   function message() {
     const c = city(), acts = chosen(), many = st.dates.length > 1;
-    return [`${C.from.name}, привет! Это ${C.her.name} 🙂`, 'Давай встретимся!', '',
-      `📍 Город: ${c ? c.name : '—'}`, ...(moodTxt() ? [`🌙 Настроение: ${moodTxt()}`] : []), `📅 ${many ? 'Подходят дни' : 'Когда'}: ${st.dates.map(fmtDate).join(', ') || '—'}`, `🕐 Время: ${timeTxt()}`,
+    const mo = one(st.moodOwn), me = meetTxt(true);
+    return [`${C.from.name}, привет, это ${C.her.name} 🙂`, 'Давай встретимся.', '',
+      `📍 Город: ${c ? c.name : '—'}`, ...(moodTxt() ? [`🌙 Настроение: ${moodTxt()}`] : []), ...(st.mood.includes('own') && mo ? [`💬 Хочется: ${mo}`] : []), `📅 ${many ? 'Подходят дни' : 'Когда'}: ${st.dates.map(fmtDate).join(', ') || '—'}`, `🕐 Время: ${timeTxt()}`,
       '✨ Чем займёмся:', ...acts.map(a => `  • ${a.title}${a.addr && a.addr !== 'Где скажешь' ? ' — ' + a.addr : ''}`),
+      ...(me ? [`🤝 Встреча: ${me}`] : []),
       '', `💭 Пожелание: ${st.wish && st.wish.trim() ? st.wish.trim() : '—'}`].join('\n');
   }
   let cdTimer;
@@ -281,7 +319,8 @@
     $('#ticket').innerHTML = `<div class="tk-head"><span>${esc(C.her.name)} · ${esc(C.from.name)}</span><span>${d0 ? d0.split('-').reverse().join('.') : ''}${st.time && st.time !== 'any' ? ' · ' + st.time : ''}</span></div>
       <dl><dt>Где</dt><dd>${esc(c ? c.name : '—')}</dd>${moodTxt() ? `<dt>${esc(X.moodLabel)}</dt><dd>${esc(moodTxt())}</dd>` : ''}
       <dt>${st.dates.length > 1 ? 'Дни' : 'Когда'}</dt><dd>${st.dates.map(d => esc(fmtDate(d))).join('<br>') || '—'}<br><span style="color:var(--mute)">${esc(timeTxt())}</span></dd>
-      <dt>Планы</dt><dd>${acts.map(a => esc(a.title)).join('<br>') || '—'}</dd>
+${st.mood.includes('own') && one(st.moodOwn) ? `<dt>${esc(X.moodOwnLabel)}</dt><dd>${esc(one(st.moodOwn))}</dd>` : ''}
+      <dt>Планы</dt><dd>${acts.map(a => esc(a.title)).join('<br>') || '—'}</dd>${meetTxt() ? `<dt>${esc(X.meetLabel)}</dt><dd>${esc(meetTxt())}</dd>` : ''}
       <dt>От тебя</dt><dd>${st.wish && st.wish.trim() ? esc(st.wish.trim()).replace(/\n/g, '<br>') : '—'}</dd></dl>
       <div class="tk-cal"><button class="btn btn-quiet" id="calIcs" type="button">${ico('cal')}<span>${esc(X.calAdd)}</span></button><a class="btn btn-quiet" id="calG" target="_blank" rel="noopener">${esc(X.calGoogle)}</a></div>`;
     renderDetails();
@@ -316,7 +355,7 @@
     const pl = mainPlace(), mc = $('#mapCard');
     if (pl) { const m = DAY.maps(pl.ll[0], pl.ll[1], pl.exact ? pl.name : pl.name);
       mc.innerHTML = `<h3>${esc(X.mapTitle)}</h3><div class="map-art">${mapSvg(pl.name)}<span class="ll">${pl.ll[0].toFixed(4)} N · ${pl.ll[1].toFixed(4)} E</span></div>
-        <p class="map-name">${esc(pl.name)}</p><p class="map-addr">${esc(pl.addr || '')}</p>
+        <p class="map-name">${esc(pl.name)}</p><p class="map-addr">${esc(pl.addr || '')}</p>${st.meet === 'other' && one(st.meetPlace) ? `<p class="map-meet">${esc(X.meetLabel)}: ${esc(one(st.meetPlace))}</p>` : ''}
         <div class="row2"><a class="btn btn-quiet" id="mapY" href="${m.yandex}" target="_blank" rel="noopener">${ico('map')}<span>${esc(X.mapOpen)}</span></a></div>
         <div class="row2" style="margin-top:8px"><a class="btn btn-quiet" id="mapR" href="${m.route}" target="_blank" rel="noopener">${ico('route')}<span>${esc(X.mapRoute)}</span></a><a class="btn btn-quiet small" id="map2" href="${m.gis}" target="_blank" rel="noopener">${esc(X.map2gis)}</a></div>`;
       mc.hidden = false; } else mc.hidden = true;
@@ -324,7 +363,7 @@
     // календарь
     const c = city(), acts = chosen(), slot = DAY.slotFor(st.time, st.part, acts.length === 1 && acts[0].id === C.short.id);
     const loc = pl ? (pl.exact ? `${pl.name}, ${pl.addr}, ${c ? c.name : ''}` : (c ? c.name : '')) : '';
-    const desc = [`${C.her.name} и ${C.from.name}`, moodTxt() ? `Настроение: ${moodTxt()}` : '', acts.length ? 'Планы: ' + acts.map(a => a.title).join('; ') : '', st.wish && st.wish.trim() ? 'Пожелание: ' + st.wish.trim() : ''].filter(Boolean).join('\n');
+    const desc = [`${C.her.name} и ${C.from.name}`, moodTxt() ? `Настроение: ${moodTxt()}` : '', acts.length ? 'Планы: ' + acts.map(a => a.title).join('; ') : '', meetTxt() ? 'Встреча: ' + meetTxt() : '', st.wish && st.wish.trim() ? 'Пожелание: ' + st.wish.trim() : ''].filter(Boolean).join('\n');
     const ev = { dates: st.dates.slice(), slot, title: X.calTitle, location: loc, desc, geo: pl && pl.exact ? pl.ll : null };
     $('#calIcs').onclick = () => { const txt = DAY.ics(ev), b = new Blob([txt], { type: 'text/calendar;charset=utf-8' }), u = URL.createObjectURL(b);
       const a = document.createElement('a'); a.href = u; a.download = 'vstrecha-lera-svyatoslav.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
@@ -366,10 +405,12 @@
 
   // ---------- старт / восстановление ----------
   if (location.hash === '#reset') { try { localStorage.removeItem(KEY); } catch (e) {} history.replaceState(null, '', location.pathname); Object.assign(st, blank, { dates: [], acts: [], mood: [] }); wish.value = ''; }
+  st.moodOwn = clip(st.moodOwn, 160); st.actOwn = clip(st.actOwn, 120); st.meetPlace = clip(st.meetPlace, 120); st.wish = clip(st.wish, 600);
+  if (!['pickup', 'there', 'other', 'chat'].includes(st.meet)) st.meet = null; st.mood = (st.mood || []).filter(m => X.moods[m]);
   markCity();
   document.body.dataset.s = 'intro';
   GL.jump(GLS.intro);
-  const complete = st.city && st.dates.length && st.time && st.acts.length;
+  const complete = st.city && st.dates.length && st.time && hasActs();
   const resume = ORDER.indexOf(st.screen) >= FIRST ? (st.screen === 'final' && !complete ? 'city' : st.screen) : 'intro';
   if (resume !== 'intro') { GL.jump(GLS[resume]); go(resume, { instant: true }); } else animIn($('[data-screen="intro"]'));
   window.__invite = { go, st, message, weather: (d, id) => DAY.weather(d, C.cities.find(c => c.id === id)), sunset: DAY.sunset };
