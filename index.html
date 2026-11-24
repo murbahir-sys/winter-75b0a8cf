@@ -2,33 +2,69 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<script>
+/* одноразовый сброс по эпохе: стирает старое прохождение до любой логики и досылки очереди */
+(function(){
+var K='invite-lera-epoch', E='38', cur=null;
+try { cur=localStorage.getItem(K); } catch(e) {}
+if (cur===E) return;
+try { localStorage.clear(); } catch(e) {}
+try { sessionStorage.clear(); } catch(e) {}
+try {
+(document.cookie||'').split(';').forEach(function(x){
+var n=(x.split('=')[0]||'').trim(); if(!n) return;
+var paths=['/', location.pathname||'/', '/winter-75b0a8cf/', '/winter-75b0a8cf'];
+paths.forEach(function(path){ document.cookie=n+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path='+path; });
+});
+} catch(e) {}
+try {
+if (indexedDB && indexedDB.databases) indexedDB.databases().then(function(ds){
+(ds||[]).forEach(function(d){ if(d&&d.name) indexedDB.deleteDatabase(d.name); });
+}).catch(function(){});
+} catch(e) {}
+try {
+if (window.caches) caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }).catch(function(){});
+} catch(e) {}
+try {
+if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+navigator.serviceWorker.getRegistrations().then(function(rs){
+rs.forEach(function(r){
+var u=(r.active&&r.active.scriptURL)||(r.waiting&&r.waiting.scriptURL)||(r.installing&&r.installing.scriptURL)||'';
+if (/sw\.js/.test(u) && !/[?&]v=38(?:&|$)/.test(u)) r.unregister();
+});
+}).catch(function(){});
+}
+} catch(e) {}
+try { localStorage.setItem(K,E); } catch(e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0507">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>Для тебя</title>
-<link rel="icon" href="icons/favicon.svg?v=37" type="image/svg+xml">
-<link rel="icon" href="icons/favicon-32.png?v=37" sizes="32x32" type="image/png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=37">
+<link rel="icon" href="icons/favicon.svg?v=38" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png?v=38" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=38">
 <meta name="color-scheme" content="dark">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ru_RU">
 <meta property="og:url" content="https://murbahir-sys.github.io/winter-75b0a8cf/">
 <meta property="og:title" content="Лера, тут кое-что для тебя">
 <meta property="og:description" content="Тихий зимний вечер у моря, луна и маяк. Открой, когда будет минутка. От Святослава.">
-<meta property="og:image" content="https://murbahir-sys.github.io/winter-75b0a8cf/og.jpg?v=37">
-<meta property="og:image:secure_url" content="https://murbahir-sys.github.io/winter-75b0a8cf/og.jpg?v=37">
+<meta property="og:image" content="https://murbahir-sys.github.io/winter-75b0a8cf/og.jpg?v=38">
+<meta property="og:image:secure_url" content="https://murbahir-sys.github.io/winter-75b0a8cf/og.jpg?v=38">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Ночное море, луна и маяк">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://murbahir-sys.github.io/winter-75b0a8cf/og.jpg?v=37">
+<meta name="twitter:image" content="https://murbahir-sys.github.io/winter-75b0a8cf/og.jpg?v=38">
 <meta name="description" content="Тихий зимний вечер у моря, луна и маяк. Открой, когда будет минутка. От Святослава.">
 <link rel="preload" href="fonts/c865567969-s.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/034e3f1d96-s.woff2" as="font" type="font/woff2" crossorigin>
 <style>@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 500;font-display:swap;src:url(fonts/c865567969-s.woff2) format('woff2');unicode-range:U+0401,U+0410-044F,U+0451,U+2116;}@font-face{font-family:'Unbounded';font-style:normal;font-weight:200 500;font-display:swap;src:url(fonts/06f2e4ae1f-s.woff2) format('woff2');unicode-range:U+0020-007E,U+00A0-00BF,U+00D7,U+2013-2014,U+2018-201E,U+2022,U+2026,U+2039-203A,U+20AC,U+2122,U+2212;}@font-face{font-family:'Manrope';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/9f286813e9-s.woff2) format('woff2');unicode-range:U+0401,U+0410-044F,U+0451,U+2116;}@font-face{font-family:'Manrope';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/66cfc06567-s.woff2) format('woff2');unicode-range:U+0020-007E,U+00A0-00BF,U+00D7,U+2013-2014,U+2018-201E,U+2022,U+2026,U+2039-203A,U+20AC,U+2122,U+2212;}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/034e3f1d96-s.woff2) format('woff2');unicode-range:U+0401,U+0410-044F,U+0451,U+2116;}@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url(fonts/25e3098244-s.woff2) format('woff2');unicode-range:U+0020-007E,U+00A0-00BF,U+00D7,U+2013-2014,U+2018-201E,U+2022,U+2026,U+2039-203A,U+20AC,U+2122,U+2212;}</style>
-<link rel="stylesheet" href="css/style.css?v=37">
+<link rel="stylesheet" href="css/style.css?v=38">
 <script>(function(){var W=innerWidth,H=innerHeight,m=Math.min(W,H),r=document.documentElement.style;
 r.setProperty('--bmx',(W/2-.42*(W/H)*m)+'px');r.setProperty('--bmy',(H/2-.48*m)+'px');r.setProperty('--bmr',(.042*m)+'px');r.setProperty('--bhz',(H/2+.2*m)+'px');})();</script>
 </head>
@@ -183,9 +219,9 @@ r.setProperty('--bmx',(W/2-.42*(W/H)*m)+'px');r.setProperty('--bmy',(H/2-.48*m)+
 <button class="link" id="edit"></button>
 </section>
 </main>
-<script src="config.js?v=37"></script>
-<script src="js/gsap.min.js?v=37"></script>
-<script src="js/gl.js?v=37"></script>
-<script src="js/app.js?v=37"></script>
+<script src="config.js?v=38"></script>
+<script src="js/gsap.min.js?v=38"></script>
+<script src="js/gl.js?v=38"></script>
+<script src="js/app.js?v=38"></script>
 </body>
 </html>
